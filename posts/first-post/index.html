@@ -4,16 +4,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
   
-  <title>Categories</title>
-  <meta property="og:title" content="Categories" />
-  <meta name="twitter:title" content="Categories" />
+  <title>Detección de picos en señales</title>
+  <meta property="og:title" content="Detección de picos en señales" />
+  <meta name="twitter:title" content="Detección de picos en señales" />
   
 
   
 
   <meta name="author" content=""/>
   <meta property="og:site_name" content="Cajita de ingenios" />
-  <meta property="og:url" content="https://cnidario.github.io/categories/" />
+  <meta property="og:url" content="https://cnidario.github.io/posts/first-post/" />
 
   
   <meta name="twitter:card" content="summary" />
@@ -21,7 +21,8 @@
   
 
   
-  <meta property="og:type" content="website" />
+  <meta property="og:type" content="article" />
+  
   
   
   <meta name="generator" content="Hugo 0.38-DEV" /><link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet">
@@ -38,20 +39,61 @@
     
 
     
-    <h1 class="c-title p-title"><a href="https://cnidario.github.io/" class="p-title__link">Cajita de ingenios</a></h1>
+    <p class="c-title p-title"><a href="https://cnidario.github.io/" class="p-title__link">Cajita de ingenios</a></p>
     
     
   </header>
   <main id="main" class="l-main">
 
 
-<section>
-  <h2>Categories</h2>
-  <ul>
+<article class="p-article">
+  <header>
+    <h1>Detección de picos en señales</h1>
+    <div>
+      <div class="c-time">
+        Posted on
+        <time datetime="2018-09-21T20:58:01&#43;02:00">
+          Sep 21, 2018
+        </time>
+      </div>
+      
+    </div>
+  </header>
+  
+  <section id="js-article" class="p-article__body">
     
+
+<h1 id="un-pequeño-juguete-en-d3js">Un pequeño juguete en d3js</h1>
+
+<p>Haciendo unos tests de un algoritmo para detectar picos en señales en Java, me resultaba tedioso tener que generar los casos a mano, así que hice esta miniaplicación para ayudar.</p>
+
+<p>Puedes colocar puntos en una gráfica manualmente con el ratón y sacarla en formato array de Java.
+Cuenta con controles para cambiar algunos parámetros. Y lo más interesante es que te muestra una líneas con los puntos más cercanos que indica un rango dentro del cual estás en determinado margen de diferencia. Útil para crear series de datos de señales que contengan o no picos.</p>
+
+<p>Hecha con ayuda de la formidable librería <a href="https://d3js.org/">D3.js</a>. También traté de utilizar <a href="https://github.com/ReactiveX/rxjs">RxJS</a>, una librería de programación reactiva, pero me pareció en un estado poco maduro, muchos cambios en la API y documentación desactualizada.</p>
+
+<p>Puedes utilizar mi app <a href="/signal-error-util.html">aquí</a>.</p>
+
+  </section>
+  <footer>
     
-  </ul>
-</section>
+    <nav class="p-pagination c-pagination">
+      <div class="c-pagination__ctrl">
+        <div class="c-pagination__newer">
+          
+          
+        </div>
+        <div class="c-pagination__older">
+          
+          
+        </div>
+      </div>
+    </nav>
+    
+
+
+  </footer>
+</article>
   </main>
   <footer class="l-footer">
     
