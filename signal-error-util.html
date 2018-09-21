@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" src="js/d3.js"></script>
+<script type="text/javascript">
+	window.onload = function() {
+		let margin = {top: 30, right: 20, bottom: 30, left: 50},
+    		width = 960,
+    		height = 450,
+    		svgWidth = width + margin.left + margin.right,
+    		svgHeight = height + margin.top + margin.bottom;
+
+    	//rangos
+    	let xDomain = [0, 1000],
+    		yDomain = [0, 1000];
+    	let x = d3.scaleLinear().domain(xDomain).range([0, width]);
+		let y = d3.scaleLinear().domain(yDomain).range([height, 0]);
+		let svgX = d3.scaleLinear().domain([0, svgWidth]).range([-margin.left, width + margin.right]);
+		let svgY = d3.scaleLinear().domain([svgHeight, 0]).range([height + margin.bottom, -margin.top]);
+
+		//ejes
+		let xAxis = d3.axisBottom(x);
+		let yAxis = d3.axisLeft(y);
+
+		let svg = d3.select("#d3")
+		    .append("svg")
+		        .attr("width", svgWidth)
+		        .attr("height", svgHeight);
+		let top = svg.append("g")
+		    .attr("transform", 
+	              "translate(" + margin.left + "," + margin.top + ")");
+		//añadir ejes
+		let xAxisNode = top.append("g")
+			.attr("class", "axis")
+			.attr("transform", "translate(0," + height + ")");
+
+		let yAxisNode = top.append("g")
+			.attr("class", "axis")
+			.attr("transform", "translate(" + 0 + ",0)");
+
+		function rebuildAxis() {
+			xAxisNode.call(xAxis);
+			yAxisNode.call(yAxis);
+		}
+		rebuildAxis();
+
+		let xMinInput = d3.select("#inputs").append("div").attr('class', 'graphInput')
+			.append("input")
+			.attr("value", xDomain[0])
+			.attr("type", "number")
+			.attr("placeholder", "X min");
+		let yMinInput = d3.select("#inputs").append("div").attr('class', 'graphInput')
+			.append("input")
+			.attr("value", yDomain[0])
+			.attr("type", "number")
+			.attr("placeholder", "Y min");
+		let xMaxInput = d3.select("#inputs").append("div").attr('class', 'graphInput')
+			.append("input")
+			.attr("value", xDomain[1])
+			.attr("type", "number")
+			.attr("placeholder", "X Max");
+		let yMaxInput = d3.select("#inputs").append("div").attr('class', 'graphInput')
+			.append("input")
+			.attr("value", yDomain[1])
+			.attr("type", "number")
+			.attr("placeholder", "Y Max");
+		xMinInput.on('change', function() {
+			xDomain[0] = xMinInput.node().valueAsNumber;
+			x.domain(xDomain);
+			rebuildAxis();
+			rebuildChart();
+		});
+		yMinInput.on('change', function() {
+			yDomain[0] = yMinInput.node().valueAsNumber;
+			y.domain(yDomain);
+			rebuildAxis();
+			rebuildChart();
+		});
+		xMaxInput.on('change', function() {
+			xDomain[1] = xMaxInput.node().valueAsNumber;
+			x.domain(xDomain);
+			rebuildAxis();
+			rebuildChart();
+		});
+		yMaxInput.on('change', function() {
+			yDomain[1] = yMaxInput.node().valueAsNumber;
+			y.domain(yDomain);
+			rebuildAxis();
+			rebuildChart();
+		});
+
+		let horizLine = [{ x : 0, y : 0 }, { x : xDomain[1], y : 0 }]; //XXX ojo si se supera por input, no se actualiza
+		let valueLine = d3.line()
+        					.x(function(d) { return svgX.invert(x(d.x)); })
+        					.y(function(d) { return 0; });
+        let graphLine = d3.line()
+        					.x(function(d) { return x(d.x); })
+        					.y(function(d) { return y(d.y); });
+        //línea horizontal que sigue al puntero
+		let percentMarginUp = svg.append("g").style("display", "none");
+		let percentMarginBot = svg.append("g").style("display", "none");
+		percentMarginUp.append("path")
+			.attr("class", "line")
+        	.style("stroke-dasharray", ("3, 3"))
+        	.style("stroke-width", 1)
+        	.attr("d", valueLine(horizLine));
+        percentMarginBot.append("path")
+			.attr("class", "line")
+        	.style("stroke-dasharray", ("3, 3"))
+        	.style("stroke-width", 1)
+        	.attr("d", valueLine(horizLine));
+       	svg.on("mouseover", function() { percentMarginUp.style("display", null); percentMarginBot.style("display", null); })
+       	   .on("mouseout",  function() { percentMarginUp.style("display", "none"); percentMarginBot.style("display", "none"); })
+       	   .on("mousemove", mousemove);
+
+       	// error absoluto entre puntos para marcar, y su input
+       	let errorAbsoluteMargin = yDomain[1] * 0.05; //XXX ojo modificaciones, 5%
+       	let absErrorInput = d3.select("#inputs").append("div").attr('class', 'graphInput')
+			.append("input")
+			.attr("value", errorAbsoluteMargin)
+			.attr("type", "number")
+			.attr("placeholder", "Abs error");
+		absErrorInput.on('change', function() {
+			errorAbsoluteMargin = absErrorInput.node().valueAsNumber;
+		});
+
+		//Label all inputs
+		d3.selectAll("#inputs .graphInput")
+			.data(["Xmin", "Ymin", "Xmax", "Ymax", "Abs Error"])
+			.insert("div", ":first-child").attr("class", "input-title").html(function(d, i) { return d; });
+
+		function mousemove() {
+			let mx = d3.mouse(this)[0], my = d3.mouse(this)[1];
+			let xx = x.invert(svgX(mx)),
+				yy = y.invert(svgY(my));
+			let neighbours = computeNeighbours(xx);
+			if(neighbours[0] || neighbours[1]) {
+				let marginTop = Infinity, marginBot = -Infinity;
+				if(neighbours[0]) {
+					marginTop = neighbours[0].y + errorAbsoluteMargin;
+					marginBot = neighbours[0].y - errorAbsoluteMargin;
+				}
+				if(neighbours[1]) {
+					marginTop = Math.min(marginTop, neighbours[1].y + errorAbsoluteMargin);
+					marginBot = Math.max(marginBot, neighbours[1].y - errorAbsoluteMargin);
+				}
+				if(marginTop > marginBot) {
+					percentMarginUp.attr("transform", "translate(0," + svgY.invert(y(marginTop)) + ")");
+					percentMarginBot.attr("transform", "translate(0," + svgY.invert(y(marginBot)) + ")");
+					percentMarginUp.style("display", null);
+					percentMarginBot.style("display", null);
+				} else {
+					percentMarginUp.style("display", "none");
+					percentMarginBot.style("display", "none");
+				}
+			}
+		}
+
+		let dataPoints = [];
+		
+		let chart = top.append("g");
+		function rebuildChart() {
+			let points = chart.selectAll("circle").data(dataPoints);
+			points.attr("cx", function(d, i) { return x(d.x); })
+				.attr("cy", function(d, i) { return y(d.y); })
+				.attr("r", 2)
+			points.enter()
+				.append("circle")
+				.style('fill', 'orange')
+				.attr("cx", function(d, i) { return x(d.x); })
+				.attr("cy", function(d, i) { return y(d.y); })
+				.attr("r", 2);
+			points.exit().remove();
+		}
+		let outputCode = d3.select("#output").append("div").attr('class', 'graphOutput');
+		function rebuildOutput() {
+			outputCode.html(convertDataToJava(dataPoints));
+		}
+		svg.on('click', function() {
+			let mx = d3.mouse(d3.event.currentTarget)[0], my = d3.mouse(this)[1];
+			let xx = x.invert(svgX(mx)),
+				yy = y.invert(svgY(my));
+
+			if(true) {
+				dataPoints.push({ x : xx, y : yy} );
+				rebuildChart();
+				rebuildOutput();
+			}
+		});
+		function computeNeighbours(xx) {
+			let leftNeighbour, rightNeighbour;
+			for(let p of dataPoints) {
+				if(p.x < xx && (!leftNeighbour || leftNeighbour.x < p.x)) {
+					leftNeighbour = p;
+				} else if(p.x > xx && (!rightNeighbour || rightNeighbour.x > p.x)) {
+					rightNeighbour = p;
+				}
+			}
+			return [leftNeighbour, rightNeighbour];
+		}
+		function convertDataToJava(points) {
+			let ps = points.slice();
+			ps.sort(function(a, b) { return a.x - b.x; });
+			let s = '{ ';
+			let first = true;
+			for(let p of ps) {
+				let x = Math.round(p.x * 10000) / 10000; //formateo con 4 decimales
+				let y = Math.round(p.y * 10000) / 10000;
+				if(!first) s += ', ';
+				first = false;
+				s += `${x}, ${y}`;
+			}
+			s += '};';
+			return s;
+		}
+		let resetButton = d3.select("#inputs").append("div").attr("class", "graphInput")
+			.append("button").html("Reset")
+			.on('click', function() {
+				dataPoints = [];
+				rebuildChart();
+				rebuildOutput();
+			});
+	}
+</script>
+</head>
+<body>
+	<div id="d3"></div>
+	<div id="inputs"></div>
+	<div id="output">
+		<h2>Java output</h2>
+	</div>
+</body>
+<style>
+	body { 
+		font: 12px Arial;
+		background-color: aliceblue;
+	}
+	#d3 {
+		margin: 0 auto;
+		width: 75%;
+	}
+	svg {
+		background-color: #f5eaea;
+		padding: 1em;
+	}
+	#inputs {
+		margin: 25px auto;
+		display: flex;
+		width: 75%;
+	}
+	#inputs .graphInput {
+		margin-left: 25px;
+	}
+	#output {
+		width: 60%;
+		margin: 0 auto;
+	}
+	.graphOutput {
+		margin: 0.5em auto;
+		background-color: #e8f4e1;
+		padding: 1em;
+		font-size: 1.1em;
+	}
+	path { 
+    	stroke: steelblue;
+    	stroke-width: 2;
+    	fill: none;
+	}
+	.axis path,
+	.axis line {
+    	fill: none;
+    	stroke: grey;
+    	stroke-width: 1;
+    	shape-rendering: crispEdges;
+	}
+</style>
+</html>
