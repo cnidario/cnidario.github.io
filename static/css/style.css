@@ -1,0 +1,42 @@
+html {
+    background: #392d40;
+    font-family: Courier New, monospace;
+    color: #e6bfa7;
+}
+body {
+    margin: 1em auto;
+    width: 50%;
+}
+header {
+    margin: 1em 0 2em 4em;
+}
+header h1 {
+    margin: 0;
+    color: #e48069;
+}
+.date {
+    margin: 0;
+    font-size: 0.8em;
+}
+h1, h2, h3, h4, h5 {
+    color: #ccc451;
+    margin: 0.5em;
+}
+p { 
+    margin: 0.5em 0;
+}
+a {
+    color: #d0d0d0;
+}
+.highlight {
+    width: 60%;
+    font-size: 1.5em;
+    padding: 0.5em 0.25em;
+    margin: 1em 5em;
+}
+.highlight pre {
+    margin: 0;
+}
+.highlight .linenos {
+    margin: 0 1em;
+}

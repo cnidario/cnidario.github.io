@@ -1,22 +1,25 @@
-$for(include-before)$
-$include-before$
-$endfor$
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>highly experimental lemonade - $title$</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/highlight.css"/>
+</head>
+<body>
 $if(title)$
 <header id="title-block-header">
 <h1 class="title">$title$</h1>
 $if(subtitle)$
 <p class="subtitle">$subtitle$</p>
 $endif$
-$for(author)$
-<p class="author">$author$</p>
-$endfor$
 $if(date)$
 <p class="date">$date$</p>
 $endif$
 </header>
-</nav>
 $endif$
+<main>
 $body$
-$for(include-after)$
-$include-after$
-$endfor$
+</main>
+</body>
+</html>
