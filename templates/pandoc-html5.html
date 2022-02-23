@@ -2,13 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>highly experimental lemonade - $title$</title>
+  <title>highly experimental lemonade $if(title)$ - $title$ $endif$</title>  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/water.css"/>
   <link rel="stylesheet" href="../css/style.css"/>
   <link rel="stylesheet" href="../css/highlight.css"/>
 </head>
 <body>
+  <header>
+      <h1>highlyexperimentallemonade</h1>
+      <nav>
+          <ul>
+              <li><a href="../home.html">home</a></li>
+              <li><a href="../posts.html">posts</a></li>
+              <li><a href="../about.html">about</a></li>
+          </ul>
+      </nav>
+  </header>
 $if(title)$
-<header id="title-block-header">
 <h1 class="title">$title$</h1>
 $if(subtitle)$
 <p class="subtitle">$subtitle$</p>
@@ -16,10 +27,10 @@ $endif$
 $if(date)$
 <p class="date">$date$</p>
 $endif$
-</header>
 $endif$
 <main>
 $body$
 </main>
+<footer>made by me</footer>
 </body>
 </html>

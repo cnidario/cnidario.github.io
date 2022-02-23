@@ -33,7 +33,7 @@ html {
 }
 
 body {
-  font-family: Courier New, monospace;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
   line-height: 1.4;
   max-width: 800px;
   margin: 20px auto;
@@ -632,7 +632,7 @@ var {
   color: #d941e2;
   color: var(--variable);
   font-style: normal;
-  font-family: Courier New, monospace;
+  font-family: monospace;
 }
 
 kbd {
