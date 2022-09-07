@@ -1,0 +1,72 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Remote procedure calls in
+Python (2) - JSON-RPC</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Remote procedure calls in Python (2) - JSON-RPC</h1><p class=date>2022-06-23<main><h2 id=json-rpc>JSON-RPC</h2><p><a href=https://en.wikipedia.org/wiki/XML-RPC>JSON-RPC</a> is a
+similar protocol to XML-RPC for remote procedure calling which changes
+XML for JSON.<p>I’ve remade the prior example, calling <code>os.uname()</code> from a
+remote machine and also a simple <code>echo</code> procedure. This
+program needs the Python <code>json-rpc</code> package. For the web
+server it just uses standard Python <code>WSGI</code> and for the client
+<code>urllib</code>.<p><code>server.py</code><pre><code class=python><div class=highlight><pre><span></span><span class=kn>from</span> <span class=nn>wsgiref.util</span> <span class=kn>import</span> <span class=n>setup_testing_defaults</span>
+<span class=kn>from</span> <span class=nn>wsgiref.simple_server</span> <span class=kn>import</span> <span class=n>make_server</span>
+<span class=kn>from</span> <span class=nn>jsonrpc</span> <span class=kn>import</span> <span class=n>JSONRPCResponseManager</span><span class=p>,</span> <span class=n>dispatcher</span>
+<span class=kn>import</span> <span class=nn>os</span>
+
+<span class=nd>@dispatcher</span><span class=o>.</span><span class=n>add_method</span>
+<span class=k>def</span> <span class=nf>uname</span><span class=p>():</span>
+    <span class=k>return</span> <span class=n>os</span><span class=o>.</span><span class=n>uname</span><span class=p>()</span>
+
+<span class=k>def</span> <span class=nf>simple_jsonrpc</span><span class=p>(</span><span class=n>environ</span><span class=p>,</span> <span class=n>start_response</span><span class=p>):</span>
+    <span class=n>dispatcher</span><span class=p>[</span><span class=s2>&quot;echo&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=k>lambda</span> <span class=n>s</span><span class=p>:</span> <span class=n>s</span>
+    <span class=n>setup_testing_defaults</span><span class=p>(</span><span class=n>environ</span><span class=p>)</span>
+    <span class=n>status</span> <span class=o>=</span> <span class=s1>&#39;200 OK&#39;</span>
+    <span class=n>headers</span> <span class=o>=</span> <span class=p>[(</span><span class=s1>&#39;Content-type&#39;</span><span class=p>,</span> <span class=s1>&#39;application/json; charset=utf-8&#39;</span><span class=p>)]</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=n>req_sz</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span><span class=n>environ</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s1>&#39;CONTENT_LENGTH&#39;</span><span class=p>,</span> <span class=mi>0</span><span class=p>))</span>
+    <span class=k>except</span> <span class=ne>ValueError</span><span class=p>:</span>
+        <span class=n>req_sz</span> <span class=o>=</span> <span class=mi>0</span>
+    <span class=n>req_body</span> <span class=o>=</span> <span class=n>environ</span><span class=p>[</span><span class=s1>&#39;wsgi.input&#39;</span><span class=p>]</span><span class=o>.</span><span class=n>read</span><span class=p>(</span><span class=n>req_sz</span><span class=p>)</span>
+    <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s1>&#39;received body(</span><span class=si>{</span><span class=n>req_sz</span><span class=si>}</span><span class=s1> bytes): </span><span class=si>{</span><span class=n>req_body</span><span class=si>}</span><span class=s1>&#39;</span><span class=p>)</span>
+    <span class=n>response</span> <span class=o>=</span> <span class=n>JSONRPCResponseManager</span><span class=o>.</span><span class=n>handle</span><span class=p>(</span><span class=n>req_body</span><span class=p>,</span> <span class=n>dispatcher</span><span class=p>)</span>
+    <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s1>&#39;reposne: </span><span class=si>{</span><span class=n>response</span><span class=o>.</span><span class=n>json</span><span class=si>}</span><span class=s1>&#39;</span><span class=p>)</span>
+    <span class=n>start_response</span><span class=p>(</span><span class=n>status</span><span class=p>,</span> <span class=n>headers</span><span class=p>)</span>
+    <span class=k>return</span> <span class=p>[</span><span class=n>response</span><span class=o>.</span><span class=n>json</span><span class=o>.</span><span class=n>encode</span><span class=p>(</span><span class=s2>&quot;utf-8&quot;</span><span class=p>)]</span>
+
+<span class=k>with</span> <span class=n>make_server</span><span class=p>(</span><span class=s1>&#39;&#39;</span><span class=p>,</span> <span class=mi>8000</span><span class=p>,</span> <span class=n>simple_jsonrpc</span><span class=p>)</span> <span class=k>as</span> <span class=n>httpd</span><span class=p>:</span>
+    <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;Serving on port 8000...&quot;</span><span class=p>)</span>
+    <span class=n>httpd</span><span class=o>.</span><span class=n>serve_forever</span><span class=p>()</span>
+</pre></div></code></pre><p><code>client.py</code><pre><code class=python><div class=highlight><pre><span></span><span class=kn>import</span> <span class=nn>urllib.request</span>
+<span class=kn>import</span> <span class=nn>json</span>
+
+<span class=k>def</span> <span class=nf>make_jsonrpc_request</span><span class=p>(</span><span class=n>name</span><span class=p>,</span> <span class=n>params</span><span class=p>,</span> <span class=n>idd</span><span class=p>):</span>
+      <span class=n>payload</span> <span class=o>=</span> <span class=p>{</span>
+          <span class=s1>&#39;method&#39;</span><span class=p>:</span> <span class=n>name</span><span class=p>,</span>
+          <span class=s1>&#39;params&#39;</span><span class=p>:</span> <span class=n>params</span><span class=p>,</span>
+          <span class=s1>&#39;jsonrpc&#39;</span><span class=p>:</span> <span class=s1>&#39;2.0&#39;</span><span class=p>,</span>
+          <span class=s1>&#39;id&#39;</span><span class=p>:</span> <span class=n>idd</span>
+      <span class=p>}</span>
+      <span class=n>data</span> <span class=o>=</span> <span class=n>json</span><span class=o>.</span><span class=n>dumps</span><span class=p>(</span><span class=n>payload</span><span class=p>)</span><span class=o>.</span><span class=n>encode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+      <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s1>&#39;debug: jsonrpc data payload: </span><span class=si>{</span><span class=n>data</span><span class=si>}</span><span class=s1>&#39;</span><span class=p>)</span>
+      <span class=n>req</span> <span class=o>=</span> <span class=n>urllib</span><span class=o>.</span><span class=n>request</span><span class=o>.</span><span class=n>Request</span><span class=p>(</span><span class=s1>&#39;http://prometeo.home:8000/jsonrpc&#39;</span><span class=p>,</span> <span class=n>data</span><span class=o>=</span><span class=n>data</span><span class=p>)</span>
+      <span class=n>req</span><span class=o>.</span><span class=n>add_header</span><span class=p>(</span><span class=s1>&#39;Content-type&#39;</span><span class=p>,</span> <span class=s1>&#39;application/json&#39;</span><span class=p>)</span>
+      <span class=k>return</span> <span class=n>req</span>
+
+
+  <span class=n>echo_req</span> <span class=o>=</span> <span class=n>make_jsonrpc_request</span><span class=p>(</span><span class=s1>&#39;echo&#39;</span><span class=p>,</span> <span class=p>[</span><span class=s1>&#39;eco ecoooo? estamos solos en esta galaxia?&#39;</span><span class=p>],</span> <span class=mi>0</span><span class=p>)</span>
+  <span class=k>with</span> <span class=n>urllib</span><span class=o>.</span><span class=n>request</span><span class=o>.</span><span class=n>urlopen</span><span class=p>(</span><span class=n>echo_req</span><span class=p>)</span> <span class=k>as</span> <span class=n>resp</span><span class=p>:</span>
+      <span class=nb>print</span><span class=p>(</span><span class=n>resp</span><span class=o>.</span><span class=n>read</span><span class=p>()</span><span class=o>.</span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>))</span>
+
+  <span class=n>uname_req</span> <span class=o>=</span> <span class=n>make_jsonrpc_request</span><span class=p>(</span><span class=s1>&#39;uname&#39;</span><span class=p>,</span> <span class=p>[],</span> <span class=mi>1</span><span class=p>)</span>
+  <span class=k>with</span> <span class=n>urllib</span><span class=o>.</span><span class=n>request</span><span class=o>.</span><span class=n>urlopen</span><span class=p>(</span><span class=n>uname_req</span><span class=p>)</span> <span class=k>as</span> <span class=n>resp</span><span class=p>:</span>
+      <span class=nb>print</span><span class=p>(</span><span class=n>resp</span><span class=o>.</span><span class=n>read</span><span class=p>()</span><span class=o>.</span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>))</span>
+</pre></div></code></pre><p>Output of <code>python client.py</code><pre><code class=console><div class=highlight><pre><span></span><span class=go>debug: jsonrpc data payload: b&#39;{&quot;method&quot;: &quot;echo&quot;, &quot;params&quot;: [&quot;eco ecoooo? estamos solos en esta galaxia?&quot;], &quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 0}&#39;</span>
+<span class=go>{&quot;result&quot;: &quot;eco ecoooo? estamos solos en esta galaxia?&quot;, &quot;id&quot;: 0, &quot;jsonrpc&quot;: &quot;2.0&quot;}</span>
+<span class=go>debug: jsonrpc data payload: b&#39;{&quot;method&quot;: &quot;uname&quot;, &quot;params&quot;: [], &quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 1}&#39;</span>
+<span class=go>{&quot;result&quot;: [&quot;Linux&quot;, &quot;prometeo&quot;, &quot;5.18.5-arch1-1&quot;, &quot;#1 SMP PREEMPT_DYNAMIC Thu, 16 Jun 2022 20:40:45 +0000&quot;, &quot;x86_64&quot;], &quot;id&quot;: 1, &quot;jsonrpc&quot;: &quot;2.0&quot;}</span>
+</pre></div></code></pre><p>Output in the server<pre><code class=console><div class=highlight><pre><span></span><span class=go>Serving on port 8000...</span>
+<span class=go>received body(103 bytes): b&#39;{&quot;method&quot;: &quot;echo&quot;, &quot;params&quot;: [&quot;eco ecoooo? estamos solos en esta galaxia?&quot;], &quot;jsonrpc&quot;: &quot;2.0&quot;,</span>
+<span class=go>&quot;id&quot;: 0}&#39;</span>
+<span class=go>reposne: {&quot;result&quot;: &quot;eco ecoooo? estamos solos en esta galaxia?&quot;, &quot;id&quot;: 0, &quot;jsonrpc&quot;: &quot;2.0&quot;}</span>
+<span class=go>192.168.1.112 - - [23/Jun/2022 17:17:47] &quot;POST /jsonrpc HTTP/1.1&quot; 200 83</span>
+<span class=go>received body(60 bytes): b&#39;{&quot;method&quot;: &quot;uname&quot;, &quot;params&quot;: [], &quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 1}&#39;</span>
+<span class=go>reposne: {&quot;result&quot;: [&quot;Linux&quot;, &quot;prometeo&quot;, &quot;5.18.5-arch1-1&quot;, &quot;#1 SMP PREEMPT_DYNAMIC Thu, 16 Jun 2022 20:40:45 +0000&quot;, &quot;x86_64&quot;], &quot;id&quot;: 1, &quot;jsonrpc&quot;: &quot;2.0&quot;}</span>
+<span class=go>192.168.1.112 - - [23/Jun/2022 17:17:47] &quot;POST /jsonrpc HTTP/1.1&quot; 200 146</span>
+</pre></div></code></pre></main><footer>made by me</footer>

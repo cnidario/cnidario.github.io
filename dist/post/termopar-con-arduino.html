@@ -1,0 +1,29 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Termopar con Arduino</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Termopar con Arduino</h1><p class=date>2020-01-07<main><h2 id=termopares-o-termocuplas>Termopares (o termocuplas)</h2><p>Debido al <a href=https://es.wikipedia.org/wiki/Efecto%5Ftermoel%C3%A9ctrico>efecto
+termoeléctrico</a> se genera un campo eléctrico a través de un conductor
+debido a diferencias de temperatura. Un <a href=https://es.wikipedia.org/wiki/Termopar>termopar</a> se vale de
+este efecto, juntando dos metales y controlando la temperatura de la
+unión (llamada unión fría), se producirán variaciones de voltaje debido
+a cambios de temperatura en el extremo. Permiten conseguir un
+<strong>amplio rango</strong> de medidas y <strong>alta
+precisión</strong>.<figure><img src=../img/scheme-thermocouple.png title="Esquema de termocupla" alt="Esquema de termocupla"><figcaption aria-hidden=true>Esquema de termocupla</figcaption></figure><p>Según el modo de fabricación se agrupan en distintos tipos. Usé un
+termopar tipo K que se construye con cromel y alumel. 1,60€ por
+Aliexpress.<figure><img src=../img/termopar-tipo-k.png title="Mi termopar tipo K" alt="Mi termopar tipo K"><figcaption aria-hidden=true>Mi termopar tipo K</figcaption></figure><p>La temperatura no es una medida absoluta. Sino que viene en función
+de la diferencia de temperatura entre los extremos de la unión y de
+donde se conecte el voltímetro. Por lo que necesitamos controlar o
+conocer la temperatura de este último. A esto es lo que se llama
+<em>cold junction compensation</em><h2 id=utilización-del-termopar>Utilización del termopar</h2><p>Las señales son muy pequeñas y se deben amplificar. Además hay que
+compensarlas con las de la unión fría. Finalmente para llevarlas a un
+sistema digital habrá que hacer la conversión. Hay muchos ICs que traen
+todas estas funciones ya empaquetadas. Yo usé el <a href=https://datasheets.maximintegrated.com/en/ds/MAX31855.pdf>MAX31855</a>
+que es una versión mejorada del MAX6675 (creo que la única diferencia es
+la resolución del ADC 14-bits vs 12 en el 6675). 1,57€ en
+Aliexpress.<h2 id=max31855>MAX31855</h2><p>Es un IC especializado para termocuplas tipo K. Nos da temperaturas
+con resolución de 0.25ºC y permite medidas en un rango (-270ºC, 1800ºC).
+Con una exactitud de +-2ºC en el rango (-200ºC, 700ºC).<figure><img src=../img/max31855/application-diagram.png title="Uso del MAX31855" alt="Uso del MAX31855"><figcaption aria-hidden=true>Uso del MAX31855</figcaption></figure><h3 id=uso-del-max31855>Uso del MAX31855</h3><p>Para interface con el micro utiliza SPI de sólo lectura. En flanco
+ascendente y polaridad GND. Opera a un máximo de 5MHz. Todo esto se saca
+de la especificación del <a href=https://datasheets.maximintegrated.com/en/ds/MAX31855.pdf>MAX31855</a>.<figure><img src=../img/max31855/spi-clk-diagram.png title="Diagrama de señales de la comunicación por SPI" alt="Diagrama de señales de la comunicación por SPI"><figcaption aria-hidden=true>Diagrama de señales de la comunicación
+por SPI</figcaption></figure><p><img src=../img/max31855/spi-data.png><p>Utilicé el SPI hardware que tiene el Arduino Uno (es decir el del
+ATmega328P). Por eso hay que utilizar los pin específicos que son del 13
+al 11, dejando el de selección de chip a libre elección (i.e. controlado
+por software). Así utilizaré la librería SPI de Arduino
+directamente.<p><img src=../img/max31855/reading-map.png><p><img src=../img/max31855/reading-map-descs.png></main><footer>made by me</footer>

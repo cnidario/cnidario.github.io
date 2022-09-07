@@ -1,0 +1,32 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Unbricking a TP-LINK Router
+(TL-WR841N)</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Unbricking a TP-LINK Router (TL-WR841N)</h1><p class=date>2022-09-07<main><p>I like very much this old router and I’d rather prefer to use it than
+the brand new one that came with the ISP company.<p>Reasons to love the TL-WR841N include: - It does the job fairly well
+(well, sometimes it struggles to manage a lot of traffic, but it usually
+works well). - It can be flashed with a <a href=dd-wrt.com>DD-WRT</a>
+firmware. - It is small and low power while doing all the things I need.
+It has a nominal power of 5.4W while in my new Zyxel VMG8924 is 24W!
+more than 4 times. Unfortunately, when trying to update my custom DD-WRT
+I’ve bricked it and became unbootable.<h2 id=how-to-unbrick>How to unbrick</h2><p>Usually, the last and only resort to save the life of these devices
+used to be opening the case and plug some sort of USB to UART/JTAG/… in
+a special socket in the PCB and to the computer and reflash the original
+stock firmware.<p><strong>But</strong> this TL-WR841N has an amazing new feature, the
+bootloader comes with a fallback mechanism and we only need to mount a
+TFTP server.<h2 id=steps>Steps</h2><p>This instructions are almost the same for this model versions v8, v9,
+v10, v11 and v12. Just change vXX in the name of the firmware file.
+<strong>Be sure to download the specific version file
+though!!</strong><ol type=1><li>Download the latest official version from the TP-LINK <a href=www.tp-link.com/es/support/download/tl-wr841n/v11/#Firmware>page</a>.
+Looking the stick at the back of the router I can see the the exact
+model and version, in my case v11.1.<li>Unzip and rename the .bin to wr841nv11_tp_recovery.bin (in my case,
+check the <a href=https://oldwiki.archive.openwrt.org/toh/tp-link/tl-wr841nd#tftp_recovery_via_bootloader_for_v8_v9_v10_v11_v12>OpenWRT
+wiki</a> to the details)<li>Setup the TFTP server</ol><pre><code class=console><div class=highlight><pre><span></span><span class=gp> # </span>pacman -S tftp-hpa
+<span class=gp> #</span><span class=c1>#### then I removed the &#39;--secure&#39; part of /etc/conf.d/tftpd but maybe it is not necessary </span>
+<span class=gp> # </span>systemctl start tftpd
+<span class=gp> # </span>cp wr841nv11_tp_recovery.bin /srv/tftp
+<span class=gp> #</span><span class=c1>#### check with curl</span>
+<span class=gp> $ </span>curl -o tmp-test-file-remove tftp://localhost/wr841nv11_tp_recovery.bin
+</pre></div></code></pre><ol start=4 type=1><li>Set the ethernet network. Static IP.</ol><pre><code class=console><div class=highlight><pre><span></span><span class=gp>#</span><span class=c1>### The TFTP server will be looked in 192.168.0.66/24 and the router will be 192.168.0.86</span>
+<span class=gp># </span>ip addr add <span class=m>192</span>.168.0.66/24 broadcast + dev enp0sxxxx <span class=c1># enp0s is your network device</span>
+</pre></div></code></pre><ol start=5 type=1><li>Conect the cable from the pc to the router (I’ve used the WAN port,
+the blue one)<li>Power on the router while pressing the reset until the lock LED
+light is on.<li>Wait till the router reboot.</ol><p>Finally you can connect to the Wifi of the router with the factory
+credentials 8).</main><footer>made by me</footer>

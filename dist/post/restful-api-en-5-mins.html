@@ -1,0 +1,40 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - RESTful API funcional en 5
+minutos con Directus / Strapi</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>RESTful API funcional en 5 minutos con Directus /
+Strapi</h1><p class=date>2021-05-22<main><p><a href=https://directus.io>Directus</a> y <a href=https://strapi.io>Strapi</a> son dos soluciones <a href=https://en.wikipedia.org/wiki/No-code_development_platform>no-code</a>
+para la gestión de un repositorio de datos. También son llamados
+<em>headless CMS</em> (porque al contrario que Wordpress no tienen
+incluído dentro toda la parafernalia para mostrar el contenido).<p>O sea, te permiten montar rápidamente un repositorio de datos,
+gestionarlo a través de una interfaz web y consumirlo a través de una
+interfaz REST o GraphQL (por ejemplo). ¿Necesitas montar una PostgreSQL,
+con una CRUD típica que sea consumida con REST y además con una bonita
+interfaz de administración (Backoffice) y las funcionalidades típicas de
+Autenticación, Paginación, etc, etc…? Puedes cogerte un framework en el
+que estés suelto como Spring, Django o Rails y tardar unas ¿horas?,
+¿días? O desplegarla con Directus en 5 minutos <strong>de
+reloj</strong>.<p>Son realmente sencillos y útiles para tener en el toolbox y en mi
+opinión no incurren en demasiada deuda técnica como para suponer un
+riesgo frente a otras opciones que intentan abarcar mucho más. Lo que
+hacen, de todos modos, no es ciencia para cohetes, sólo se trata de
+hacer una tarea común rápida para prototipos o para servicios no
+demasiado exigentes.<p>Al ajo.<h1 id=la-tienda-con-directus>La tienda con Directus</h1><ol type=1><li>Instancia Postgres (lo hago con docker)</ol><pre><code class=bash><div class=highlight><pre><span></span>docker volume create tienda
+docker run --name postgres_db <span class=se>\</span>
+    -e <span class=nv>POSTGRES_PASSWORD</span><span class=o>=</span>postgres <span class=se>\</span>
+    -e <span class=nv>POSTGRES_USER</span><span class=o>=</span>postgres <span class=se>\</span>
+    -e <span class=nv>POSTGRES_DB</span><span class=o>=</span>tienda <span class=se>\</span>
+    -p <span class=m>5432</span>:5432 <span class=se>\</span>
+    -v tienda:/var/lib/postgresql/data <span class=se>\</span>
+    -d postgres
+</pre></div></code></pre><ol start=2 type=1><li>Proyecto Directus</ol><pre><code class=bash><div class=highlight><pre><span></span>npx create-directus-project tienda-directus
+</pre></div></code></pre><p>Es un programa <strong>interactivo</strong>. Seleccionamos PostgreSQL
+y ponemos la password, user y nombre de base de datos con los que
+lanzamos el contenedor de Docker. También puede configurarse
+offline.<figure><img src=/blog/restful-directus-1.png alt="Prompt interactivo al crear un proyecto con Directus"><figcaption aria-hidden=true>Prompt interactivo al crear un proyecto
+con Directus</figcaption></figure><ol start=3 type=1><li>Ya está listo. Arrancamos la app.</ol><pre><code class=bash><div class=highlight><pre><span></span><span class=nb>cd</span> tienda-directus <span class=o>&amp;&amp;</span> npx directus start
+</pre></div></code></pre><ol start=4 type=1><li>Ahora sólo queda acceder a localhost:8055</ol><figure><img src=/blog/restful-directus-2.png alt="Pantalla de login de la app de administración"><figcaption aria-hidden=true>Pantalla de login de la app de
+administración</figcaption></figure><h2 id=creando-el-modelo>Creando el modelo</h2><p>Será una tienda no demasiado simple. Tenemos artículos con título,
+descripción, precio, imagen y valoraciones asociadas a comentarios de
+usuarios. Colecciones: - articulos titulo, descripcion, precio, imagen -
+usuarios nombre, password - valoraciones comentario, puntuacion - cada
+articulo tiene muchas valoraciones - cada usuario tiene muchas
+valoraciones - cada valoración tiene un único usuario y único articulo.
+Directus no tiene O2O<p>Roles & permisos</main><footer>made by me</footer>

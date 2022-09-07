@@ -1,0 +1,8 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - new blog engine</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>new blog engine</h1><p class=date>2022-02-23<main><p>So after trying hugo and zola for building a static blog, I’ve
+decided to make my own ‘blog engine’. Well, it’s just a Makefile and
+some scripts. I rather prefer the simplicity of this approach to a more
+featureful system because the price for that is a lot of hidden
+complexity.<p>I use pandoc for rendering markdown to html, and a filter written in
+lua for piping the code blocks into pygmentize. Also some awk one liners
+to generate the list of posts. The styling is minimal, I use water.css
+with minimal tweaks, to taste. Finally, I minify all the output.<p>Basically it’s just that. Very simple and lightweight.</main><footer>made by me</footer>

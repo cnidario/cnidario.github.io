@@ -1,0 +1,68 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Remote procedure calls in
+Python (1) - XMLRPC</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Remote procedure calls in Python (1) - XMLRPC</h1><p class=date>2022-06-19<main><h2 id=xml-rpc>XML-RPC</h2><p>Python comes with an implementation of <a href=https://en.wikipedia.org/wiki/XML-RPC>XML-RPC</a>. XML-RPC is a
+Remote Procedure Callstandard method wich uses XML via HTTP (and further
+evolved into SOAP).<p>Here is a simple example which retrieves machine information through
+<code>os.uname()</code> from a remote machine.<p><code>server.py</code><pre><code class=python><div class=highlight><pre><span></span><span class=kn>from</span> <span class=nn>xmlrpc.server</span> <span class=kn>import</span> <span class=n>SimpleXMLRPCServer</span>
+<span class=kn>from</span> <span class=nn>xmlrpc.server</span> <span class=kn>import</span> <span class=n>SimpleXMLRPCRequestHandler</span>
+<span class=kn>import</span> <span class=nn>os</span>
+
+<span class=k>class</span> <span class=nc>RequestHandler</span><span class=p>(</span><span class=n>SimpleXMLRPCRequestHandler</span><span class=p>):</span>
+    <span class=n>rpc_paths</span> <span class=o>=</span> <span class=p>(</span><span class=s1>&#39;/RPC2&#39;</span><span class=p>,)</span>
+
+<span class=k>with</span> <span class=n>SimpleXMLRPCServer</span><span class=p>((</span><span class=s1>&#39;0.0.0.0&#39;</span><span class=p>,</span> <span class=mi>8000</span><span class=p>),</span>
+        <span class=n>requestHandler</span><span class=o>=</span><span class=n>RequestHandler</span><span class=p>)</span> <span class=k>as</span> <span class=n>server</span><span class=p>:</span>
+    <span class=n>server</span><span class=o>.</span><span class=n>register_introspection_functions</span><span class=p>()</span>
+    <span class=nb>print</span><span class=p>(</span><span class=s1>&#39;Exporting function os.uname&#39;</span><span class=p>)</span>
+    <span class=k>def</span> <span class=nf>uname_wrapper</span><span class=p>():</span>
+        <span class=n>o</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>uname</span><span class=p>()</span>
+        <span class=k>return</span> <span class=p>{</span> <span class=s1>&#39;sysname&#39;</span><span class=p>:</span> <span class=n>o</span><span class=o>.</span><span class=n>sysname</span><span class=p>,</span>
+                 <span class=s1>&#39;nodename&#39;</span><span class=p>:</span> <span class=n>o</span><span class=o>.</span><span class=n>nodename</span><span class=p>,</span>
+                 <span class=s1>&#39;release&#39;</span><span class=p>:</span> <span class=n>o</span><span class=o>.</span><span class=n>release</span><span class=p>,</span>
+                 <span class=s1>&#39;version&#39;</span><span class=p>:</span> <span class=n>o</span><span class=o>.</span><span class=n>version</span><span class=p>,</span>
+                 <span class=s1>&#39;machine&#39;</span><span class=p>:</span> <span class=n>o</span><span class=o>.</span><span class=n>machine</span> <span class=p>}</span>
+    <span class=n>server</span><span class=o>.</span><span class=n>register_function</span><span class=p>(</span><span class=n>uname_wrapper</span><span class=p>,</span> <span class=s1>&#39;uname&#39;</span><span class=p>)</span>
+    <span class=nb>print</span><span class=p>(</span><span class=s1>&#39;Starting XML-RPC server at 0.0.0.0:8000...&#39;</span><span class=p>)</span>
+    <span class=n>server</span><span class=o>.</span><span class=n>serve_forever</span><span class=p>()</span>
+</pre></div></code></pre><p><code>client.py</code><pre><code class=python><div class=highlight><pre><span></span><span class=kn>import</span> <span class=nn>xmlrpc.client</span>
+
+<span class=n>rpc_server</span> <span class=o>=</span> <span class=s1>&#39;localhost:8000&#39;</span>
+<span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s1>&#39;Connecting to </span><span class=si>{</span><span class=n>rpc_server</span><span class=si>}</span><span class=s1>&#39;</span><span class=p>)</span>
+<span class=n>server</span> <span class=o>=</span> <span class=n>xmlrpc</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>ServerProxy</span><span class=p>(</span><span class=sa>f</span><span class=s1>&#39;http://</span><span class=si>{</span><span class=n>rpc_server</span><span class=si>}</span><span class=s1>&#39;</span><span class=p>)</span>
+<span class=nb>print</span><span class=p>(</span><span class=s1>&#39;Calling server.uname()&#39;</span><span class=p>)</span>
+<span class=nb>print</span><span class=p>(</span><span class=n>server</span><span class=o>.</span><span class=n>uname</span><span class=p>())</span>
+<span class=nb>print</span><span class=p>(</span><span class=s1>&#39;Calling listMethods&#39;</span><span class=p>)</span>
+<span class=nb>print</span><span class=p>(</span><span class=n>server</span><span class=o>.</span><span class=n>system</span><span class=o>.</span><span class=n>listMethods</span><span class=p>())</span>
+</pre></div></code></pre><p>Output of <code>python client.py</code><pre><code class=console><div class=highlight><pre><span></span><span class=go>Connecting to remote-machine:8000</span>
+<span class=go>Calling server.uname()</span>
+<span class=go>{&#39;sysname&#39;: &#39;Linux&#39;, &#39;nodename&#39;: &#39;prometeo&#39;, &#39;release&#39;: &#39;5.18.5-arch1-1&#39;, &#39;version&#39;: &#39;#1 SMP PREEMPT_DYNAMIC Thu, 16 Jun 2022 20:40:45 +0000&#39;, &#39;machine&#39;: &#39;x86_64&#39;}</span>
+<span class=go>Calling listMethods</span>
+<span class=go>[&#39;system.listMethods&#39;, &#39;system.methodHelp&#39;, &#39;system.methodSignature&#39;, &#39;uname&#39;]</span>
+</pre></div></code></pre><p>Output in the server<pre><code class=console><div class=highlight><pre><span></span><span class=go>Exporting function os.uname</span>
+<span class=go>Starting XML-RPC server at 0.0.0.0:8000...</span>
+<span class=go>192.168.1.112 - - [19/Jun/2022 10:31:02] &quot;POST /RPC2 HTTP/1.1&quot; 200 -</span>
+<span class=go>192.168.1.112 - - [19/Jun/2022 10:31:02] &quot;POST /RPC2 HTTP/1.1&quot; 200 -</span>
+</pre></div></code></pre><p>If we put a man-in-the-middle with socat we can see the actual
+conversation between the programs<pre><code class=console><div class=highlight><pre><span></span><span class=go>socat -v tcp-listen:9999,fork,reuseaddr tcp:prometeo.home:8000 # pipe man in the middle MITM</span>
+</pre></div></code></pre><p>First change the rpc_server variable in client.py to point to our
+MITM <code>localhost:9999</code> Ouput<pre><code class=console><div class=highlight><pre><span></span><span class=go>POST /RPC2 HTTP/1.1\r</span>
+<span class=go>Host: localhost:9999\r</span>
+<span class=go>Accept-Encoding: gzip\r</span>
+<span class=go>Content-Type: text/xml\r</span>
+<span class=go>User-Agent: Python-xmlrpc/3.10\r</span>
+<span class=go>Content-Length: 99\r</span>
+<span class=go>\r</span>
+<span class=go>&lt;?xml version=&#39;1.0&#39;?&gt;</span>
+<span class=go>&lt;methodCall&gt;</span>
+<span class=go>&lt;methodName&gt;uname&lt;/methodName&gt;</span>
+<span class=go>&lt;params&gt;</span>
+<span class=go>&lt;/params&gt;</span>
+<span class=go>&lt;/methodCall&gt;</span>
+<span class=go>&lt; 2022/06/22 13:47:26.000903951  length=717 from=0 to=716</span>
+<span class=go>HTTP/1.0 200 OK\r</span>
+<span class=go>Server: BaseHTTP/0.6 Python/3.10.5\r</span>
+<span class=go>Date: Wed, 22 Jun 2022 11:46:14 GMT\r</span>
+<span class=go>Content-type: text/xml\r</span>
+<span class=go>Content-length: 580\r</span>
+
+<span class=go>...</span>
+</pre></div></code></pre></main><footer>made by me</footer>

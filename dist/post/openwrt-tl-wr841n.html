@@ -1,0 +1,34 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Installing OpenWrt in a TP-LINK
+TL-WR841N Router</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Installing OpenWrt in a TP-LINK TL-WR841N Router</h1><p class=date>2022-09-07<main><p>This is an old router but I like to use old technology that works.
+Low power, low specs, minimalism, battle-tested, no bloat.<h2 id=getting-the-image>Getting the image</h2><p>At the time of speaking, 2022, OpenWrt already had dropped support
+years ago for this model because its low RAM and Flash memory. Anyway
+there is an old one that works. It’s <a href=https://oldwiki.archive.openwrt.org/toh/tp-link/tl-wr841nd#installation>here</a><h2 id=setting-the-tftp-server>Setting the TFTP server</h2><p>For some reason I can’t flash my own firmware through the web
+interface so I’ve used the TFTP method, allegedly there is some regional
+codes in the formware binary that are checked in the web interface but
+not in the TFTP recovery method.<pre><code class=console><div class=highlight><pre><span></span><span class=gp># </span>pacman -S tftp-hpa
+<span class=gp>#</span><span class=c1>## edit /etc/conf.d/tftpd and prepend -v -v -v to the options, I&#39;ve used this for debugguing purposes to see the router accessing my server</span>
+<span class=gp># </span>systemctl start tftpd
+<span class=gp>#</span><span class=c1>## check logs with</span>
+<span class=gp># </span>journalctl --unit tftpd
+<span class=gp>#</span><span class=c1>## copy the file. The name must be the same that the one for recovery, in this case (my router version is 11.1) wr841nv11_tp_recovery.bin</span>
+<span class=gp># </span>cp PLACEHOLDER /srv/tftp/wr841nv11_tp_recovery.bin
+</pre></div></code></pre><h2 id=set-the-network>Set the network</h2><pre><code class=console><div class=highlight><pre><span></span><span class=gp># </span>ip addr add <span class=m>192</span>.168.0.66/24 dev enp0sxxx
+</pre></div></code></pre><p>Plug the ethernet cable to the WAN port of the router and to your
+computer. Then power on the router while pressing the reset button until
+the lock LED lights up. Then wait for the router to reboot.<h2 id=configuring>Configuring</h2><p>At first, Wifi is disabled and you have to access through SSH.
+Reconnect the ethernet cable but this time to any other non-WAN port. We
+need now to get our IP by DHCP.<pre><code class=console><div class=highlight><pre><span></span><span class=gp># </span>ip addr del <span class=m>192</span>.168.0.66/24 dev enp0sxxx
+<span class=gp># </span>dhclient enp0sxxxx -v
+<span class=gp>#</span><span class=c1>## modern versions of SSH have been disabled insecure and old algorithms, so we have to explicitly enable it now</span>
+<span class=gp># </span>ssh -oHostKeyAlgorithms<span class=o>=</span>+ssh-rsa root@192.168.1.1
+</pre></div></code></pre><p><img src=../img/openwrt-tl-wr841n-1.png title="Voilà, we're in"><p><strong>Important step!</strong> Remember to change the SSH empty
+root password with <code>passwd</code>.<h2 id=setting-the-wifi>Setting the wifi</h2><p>OpenWrt uses the <a href=https://openwrt.org/docs/guide-user/base-system/uci>UCI</a>
+configuration system.<pre><code class=console><div class=highlight><pre><span></span><span class=gp># </span>uci show wireless <span class=c1>## show current wireless options</span>
+<span class=gp># </span>uci <span class=nb>set</span> wireless.radio0.country<span class=o>=</span><span class=s1>&#39;EU&#39;</span> <span class=c1>## country code</span>
+<span class=gp># </span>uci <span class=nb>set</span> wireless.radio0.disabled<span class=o>=</span><span class=s1>&#39;0&#39;</span> <span class=c1>## enable wireless</span>
+<span class=gp># </span>uci <span class=nb>set</span> wireless.@wifi-iface<span class=o>[</span><span class=m>0</span><span class=o>]</span>.ssid<span class=o>=</span><span class=s1>&#39;YOUR WIFI NETWORK NAME&#39;</span>
+<span class=gp># </span>uci <span class=nb>set</span> wireless.@wifi-iface<span class=o>[</span><span class=m>0</span><span class=o>]</span>.encryption<span class=o>=</span><span class=s1>&#39;psk+tkip+ccmp&#39;</span> <span class=c1>## CCMP is more secure, the others are for maximum compatibility</span>
+<span class=gp># </span>uci <span class=nb>set</span> wireless.@wifi-iface<span class=o>[</span><span class=m>0</span><span class=o>]</span>.key<span class=o>=</span><span class=s1>&#39;YOUT NETWORK PASSWORD&#39;</span> <span class=c1>## Wifi password in **plain** format</span>
+<span class=gp># </span>uci commit wireless <span class=c1>## commit changes</span>
+<span class=gp># </span>wifi reload <span class=c1>## reload the wifi system</span>
+</pre></div></code></pre></main><footer>made by me</footer>

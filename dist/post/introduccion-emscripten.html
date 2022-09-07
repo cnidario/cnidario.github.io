@@ -1,0 +1,36 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Compilando GNU Assembler con
+emscripten</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Compilando GNU Assembler con emscripten</h1><p class=date>2019-12-07<main><p><a href=https://emscripten.org/>Emscripten</a> es un toolchain que
+permite compilar programas de C y C++ para el navegador.<p>Con él podemos:<ul><li>Compilar código C y C++ a Javascript o WebAssembly<li>Compilar cualquier código que pueda ser traducido a LLVM bitcode a
+Javascript<li>Compilar runtimes escritos en C/C++ de otros lenguajes y luego
+correr código en esos lenguajes de un modo indirecto (ej. Python,
+Lua)</ul><p>En este post compilaremos el programa <a href=https://ftp.gnu.org/old-gnu/Manuals/gas-2.9.1/html_node/as_3.html>GNU
+Assembler</a> de binutils para la plataforma ARM.<h1 id=instalando-emscripten>Instalando emscripten</h1><p>Clonamos el repo, instalamos las tools y las activamos<pre><code class=console><div class=highlight><pre><span></span><span class=go>git clone https://github.com/juj/emsdk.git</span>
+<span class=go>cd emsdk</span>
+<span class=go>./emsdk install latest</span>
+<span class=go>./emsdk activate latest</span>
+<span class=go>source emsdk_env.sh</span>
+<span class=go>cd ..</span>
+</pre></div></code></pre><h1 id=compilación-con-emscripten>Compilación con emscripten</h1><p>Emscripten se integra con los sistemas de build de <a href=https://www.gnu.org/software/make/>Make</a> & <a href=https://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html>autotools</a>
+y <a href=https://cmake.org/>CMake</a>. Compila el código a LLVM
+bitcode para traducirlo después a Javascript. Introduce su propio
+runtime que abstraerá la funcionalidad estándar de C/C++.<p>El proceso para compilar GNU Assembler es el siguiente:<pre><code class=console><div class=highlight><pre><span></span><span class=go>wget http://ftp.gnu.org/gnu/binutils/binutils-2.33.1.tar.xz</span>
+<span class=go>tar -xf binutils-2.33.1.tar.xz</span>
+<span class=go>mkdir -p build</span>
+<span class=go>cd build</span>
+</pre></div></code></pre><p>Binutils puede configurarse con 3 plataformas<ul><li><em>build</em> es donde se compila el programa<li><em>host</em> es donde correrá<li><em>target</em> es la plataforma para la que ensamblará, en nuestro
+caso ARM Linux</ul><pre><code class=console><div class=highlight><pre><span></span><span class=go>emconfigure ../binutils-2.33.1/configure --disable-doc --build=x86 --host=wasm32 --target=arm-linux</span>
+<span class=go>emmake make -j4 CFLAGS=&quot;-DHAVE_PSIGNAL=1 -DELIDE_CODE -D__GNU_LIBRARY__&quot;</span>
+<span class=go>mkdir -p ../root</span>
+<span class=go>emmake make install DESTDIR=&quot;$(pwd)/../root&quot;</span>
+</pre></div></code></pre><p>El último paso es compilar el LLVM bitcode a Javascript. Generando el
+fichero <code>as.js</code> para incluír en nuestro documento HTML.<p>Las opciones <code>--pre-js</code> y <code>--post-js</code> permiten
+introducir código custom entre la inicialización del runtime.<pre><code class=console><div class=highlight><pre><span></span><span class=go>ln -s as ../root/usr/local/arm-linux/bin/as.bc</span>
+<span class=go>emcc ../root/usr/local/arm-linux/bin/as.bc -O3 -g3 -s FORCE_FILESYSTEM=1 -s MODULARIZE=1 -s &#39;EXPORT_NAME=AS&#39; -o as.js --pre-js ../src/pre-js.js --post-js ../src/post-js.js</span>
+</pre></div></code></pre><h1 id=uso-desde-javascript>Uso desde Javascript</h1><p>Veamos el ejemplo mínimo:<pre><code class=javascript><div class=highlight><pre><span></span><span class=nx>AS</span><span class=p>().</span><span class=nx>then</span><span class=p>(</span><span class=kd>function</span><span class=p>(</span><span class=nx>Module</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>Module</span><span class=p>.</span><span class=nx>FS</span><span class=p>.</span><span class=nx>writeFile</span><span class=p>(</span><span class=s1>&#39;input.s&#39;</span><span class=p>,</span> <span class=s1>&#39;.section .text\n_start:\nmov r7, #0\n&#39;</span><span class=p>);</span>
+    <span class=nx>Module</span><span class=p>.</span><span class=nx>callMain</span><span class=p>([</span><span class=s1>&#39;-o&#39;</span><span class=p>,</span> <span class=s1>&#39;output.o&#39;</span><span class=p>,</span> <span class=s1>&#39;input.s&#39;</span><span class=p>]);</span>
+    <span class=kd>var</span> <span class=nx>result</span> <span class=o>=</span> <span class=nx>Module</span><span class=p>.</span><span class=nx>FS</span><span class=p>.</span><span class=nx>readFile</span><span class=p>(</span><span class=s1>&#39;output.o&#39;</span><span class=p>);</span>
+<span class=p>});</span>
+</pre></div></code></pre><ul><li>Instanciamos el módulo que devuelve una <code>Promise</code><li>Accedemos al sistema de ficheros virtual con
+<code>FS.writeFile</code> y <code>FS.readFile</code>.<li>Llamamos al programa con el método
+<code>callMain([arg1, arg2, ...])</code></ul><p><iframe src=/extra/emscripten-gas-example.html></iframe></main><footer>made by me</footer>

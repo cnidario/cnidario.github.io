@@ -1,0 +1,23 @@
+<!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Lovely asteroids</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Lovely asteroids</h1><p class=date>2021-04-10<main><p>Last month I wanted to test the only-code game engine <a href=https://love2d.org/>LÖVE</a> which is based in <a href=http://www.lua.org/>Lua</a>. Even not having ever touched Lua, it
+was very straightforward to go. It took me maybe 15 hours split into two
+days, plus some more hours, days after, polishing it. It’s mostly a
+single file plus assets and a vector utility library.<p>Getting into code is pretty fast, in Arch <code>pacman -S love</code>
+and you can start coding. Aswell as running the game. Just
+<code>love .</code> from the game directory. Could be easier? :)<p>You need then 1 file, <code>main.lua</code> containing 3 functions: -
+<code>love.load()</code> - <code>love.update(dt)</code> -
+<code>love.draw(dt)</code><p>Let’s see an example which draws a rectangle<pre><code class=lua><div class=highlight><pre><span></span><span class=kr>function</span> <span class=nc>love</span><span class=p>.</span><span class=nf>draw</span><span class=p>(</span><span class=n>dt</span><span class=p>)</span>
+    <span class=n>love</span><span class=p>.</span><span class=n>graphics</span><span class=p>.</span><span class=n>setColor</span><span class=p>(</span><span class=mf>0.5</span><span class=p>,</span><span class=mf>0.1</span><span class=p>,</span><span class=mf>0.2</span><span class=p>)</span>
+    <span class=n>love</span><span class=p>.</span><span class=n>graphics</span><span class=p>.</span><span class=n>rectangle</span><span class=p>(</span><span class=s1>&#39;fill&#39;</span><span class=p>,</span> <span class=mi>100</span><span class=p>,</span> <span class=mi>100</span><span class=p>,</span> <span class=mi>250</span><span class=p>,</span> <span class=mi>400</span><span class=p>)</span>
+<span class=kr>end</span>
+</pre></div></code></pre><p>You can even do without load and update. If you now
+<code>love .</code> you will see this ugly rectangle. <img src=../img/lovely-asteroids-1.png alt="Image of a rectangle drew by LÖVE"><h2 id=asteroids>Asteroids</h2><p>It’s a very simple clone with program generated graphics. Doesn’t
+have a menu, just get into action.<p>Features of the game - Spawn & generation of random asteroids
+(ellipse based, some look really ugly, had to fix 8). - Collision of
+asterois with bullets & player. - Asteroids have a ‘dimension’, when
+you destroy one with dimension > 1 it explodes into multiple of
+dimension-1. - Sounds! (<a href=https://sfxr.me/>with sfxr.me!
+fun!</a>) - Lose condition. - No win condition <em>BUT</em> you have a
+score. - Particle effects and random bizarre juicing, especially
+explosions. - About 400 lines of spaguetti code.<p>I tried also to export it to Javascript but failed miserably. There
+are some attempts in GitHub to port it through Emscripten but I couldn’t
+manage to make it to work after some tries.<p>Probably more fun to code than to play, anyway…<p>Enjoy coding!<figure><img src=../img/lovely-asteroids-2.png alt="Image of the game"><figcaption aria-hidden=true>Image of the game</figcaption></figure></main><footer>made by me</footer>
