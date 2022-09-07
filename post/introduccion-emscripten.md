@@ -69,5 +69,5 @@ AS().then(function(Module) {
 - Accedemos al sistema de ficheros virtual con `FS.writeFile` y `FS.readFile`.
 - Llamamos al programa con el método `callMain([arg1, arg2, ...])`
 
-`{{< iframe /extra/emscripten-gas-example.html >}}`
+`{{< iframe /dist/extra/emscripten-gas-example.html >}}`
 

@@ -1,5 +1,5 @@
 <!doctype html><html lang=en><meta charset=utf-8><title>highly experimental lemonade - Compilando GNU Assembler con
-emscripten</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=../css/water.css><link rel=stylesheet href=../css/style.css><link rel=stylesheet href=../css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=../home.html>home</a><li><a href=../posts.html>posts</a><li><a href=../about.html>about</a></ul></nav></header><h1 class=title>Compilando GNU Assembler con emscripten</h1><p class=date>2019-12-07<main><p><a href=https://emscripten.org/>Emscripten</a> es un toolchain que
+emscripten</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=/dist/css/water.css><link rel=stylesheet href=/dist/css/style.css><link rel=stylesheet href=/dist/css/highlight.css><header><h1>highlyexperimentallemonade</h1><nav><ul><li><a href=/dist/home.html>home</a><li><a href=/dist/posts.html>posts</a><li><a href=/dist/about.html>about</a></ul></nav></header><h1 class=title>Compilando GNU Assembler con emscripten</h1><p class=date>2019-12-07<main><p><a href=https://emscripten.org/>Emscripten</a> es un toolchain que
 permite compilar programas de C y C++ para el navegador.<p>Con él podemos:<ul><li>Compilar código C y C++ a Javascript o WebAssembly<li>Compilar cualquier código que pueda ser traducido a LLVM bitcode a
 Javascript<li>Compilar runtimes escritos en C/C++ de otros lenguajes y luego
 correr código en esos lenguajes de un modo indirecto (ej. Python,
@@ -33,4 +33,4 @@ introducir código custom entre la inicialización del runtime.<pre><code class=
 <span class=p>});</span>
 </pre></div></code></pre><ul><li>Instanciamos el módulo que devuelve una <code>Promise</code><li>Accedemos al sistema de ficheros virtual con
 <code>FS.writeFile</code> y <code>FS.readFile</code>.<li>Llamamos al programa con el método
-<code>callMain([arg1, arg2, ...])</code></ul><p><iframe src=/extra/emscripten-gas-example.html></iframe></main><footer>made by me</footer>
+<code>callMain([arg1, arg2, ...])</code></ul><p><iframe src=/dist/extra/emscripten-gas-example.html></iframe></main><footer>made by me</footer>
