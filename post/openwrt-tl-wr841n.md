@@ -37,7 +37,7 @@ At first, Wifi is disabled and you have to access through SSH. Reconnect the eth
 ### modern versions of SSH have been disabled insecure and old algorithms, so we have to explicitly enable it now
 # ssh -oHostKeyAlgorithms=+ssh-rsa root@192.168.1.1
 ```
-![](img/openwrt-tl-wr841n-1.png "Voilà, we're in")
+![](../img/openwrt-tl-wr841n-1.png "Voilà, we're in")
 
 **Important step!** Remember to change the SSH empty root password with `passwd`. 
 
