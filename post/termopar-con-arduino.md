@@ -7,7 +7,7 @@ tags:
 - arduino
 categories: 
 - electronics
-draft: true
+draft: false
 ---
 
 ## Termopares (o termocuplas)
@@ -20,7 +20,7 @@ a cambios de temperatura en el extremo. Permiten conseguir un **amplio rango** d
 
 Según el modo de fabricación se agrupan en distintos tipos. Usé un termopar tipo K que se construye con cromel y alumel. 1,60€ por Aliexpress.
 
-![Mi termopar tipo K](../img/termopar-tipo-k.jpg "Mi termopar tipo K")
+![Mi termopar tipo K](../img/termopar-tipo-k.png "Mi termopar tipo K")
 
 La temperatura no es una medida absoluta. Sino que viene en función de la diferencia de temperatura entre los extremos de la unión y de donde se conecte el voltímetro. Por lo que
 necesitamos controlar o conocer la temperatura de este último. A esto es lo que se llama _cold junction compensation_

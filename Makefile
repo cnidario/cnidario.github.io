@@ -1,18 +1,21 @@
-
 MDS := $(wildcard post/*.md)
 IMAGES := $(shell find static/ -type f '(' -name '*.png' -o -name '*.jpg' -o -name '*.svg' ')' )
 HTMLS := $(patsubst post%, dist/post%, $(patsubst %.md, %.html, $(MDS))) dist/posts.html dist/home.html dist/about.html
+EXTRAS := $(wildcard static/extra/*)
 CSS := $(wildcard static/css/*.css)
+JS := $(wildcard static/js/*)
 
 OUT_IMGS := $(patsubst static/img%, dist/img%, $(IMAGES))
 OUT_CSS := $(patsubst static/css%, dist/css%, $(CSS))
-
+OUT_EXTRAS := $(patsubst static/extra%, dist/extra%, $(EXTRAS))
+OUT_JS := $(patsubst static/js%, dist/js%, $(JS))
 .PHONY: all clean live
 
-all: $(HTMLS) $(OUT_IMGS) $(OUT_CSS) dist/css/highlight.css static/css/water.css
+all: $(HTMLS) $(OUT_IMGS) $(OUT_CSS) $(OUT_JS) $(OUT_EXTRAS) dist/css/highlight.css static/css/water.css
 
 dist/post/%.html : post/%.md templates/pandoc-html5.html scripts/pandoc-code.lua
 	@mkdir -p dist/post
+	@echo "Processing" $@
 	$(shell pandoc -s -f markdown+yaml_metadata_block -t html5 \
 		--lua-filter scripts/pandoc-code.lua \
 		--citeproc \
@@ -22,9 +25,14 @@ dist/post/%.html : post/%.md templates/pandoc-html5.html scripts/pandoc-code.lua
 dist/img/% : static/img/%
 	@mkdir -p $(@D)
 	@cp $< $@
+dist/js/% : static/js/%
+	@mkdir -p $(@D)
+	@cp $< $@
+dist/extra/% : static/extra/%
+	@mkdir -p $(@D)
+	@cp $< $@
 
 dist/css/highlight.css :
-	#$(shell scripts/gen-highlight.sh 2>/dev/null > $@)
 	$(shell pygmentize -S inkpot -f html -a .highlight | minify --type css -o $@)
 dist/css/% : static/css/%
 	@mkdir -p $(@D)
@@ -32,7 +40,26 @@ dist/css/% : static/css/%
 
 tmp/titles.md : post/*.md templates/pandoc-html5.html
 	@mkdir -p tmp
-	$(shell awk -v delim=0 -F': ' '$$1=="title" {htmlfn=FILENAME;sub(/\.md/,".html",htmlfn);print("- ["$$2"]("htmlfn")")} /---/ {if(delim) {delim=0;nextfile} else delim=1;}' post/*.md > $@)
+	$(shell awk -v delim=0 -F': ' \
+		'$$1=="title" { \
+		  title = $$2; \
+		  htmlfn=FILENAME; \
+		  sub(/\.md/,".html",htmlfn); \
+		} \
+		$$1=="date" { \
+		  datefn = $$2; \
+		} \
+		$$1=="draft" { \
+		  draft = $$2; \
+		} \
+		/---/ { \
+		  if(delim) { \
+		    if(draft && draft == "true") { } \
+		    else { print("- "datefn". ["title"]("htmlfn")"); } \
+			delim=0; \
+			nextfile; \
+		  } else delim=1; \
+		}' post/*.md | sort -k 1 -r > $@)
 
 dist/posts.html : tmp/titles.md
 	$(shell pandoc -s --metadata title=posts -f markdown -t html5 --template templates/pandoc-html5.html $< | minify --type html -o $@)

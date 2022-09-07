@@ -1,0 +1,138 @@
+#+title: Sonido con ALSA
+#+author: cnidario
+#+date: 2019-12-27
+
+#+hugo_base_dir: ..
+#+hugo_section: posts
+#+hugo_draft: true
+#+hugo_publishdate: 2019-12-27
+#+hugo_tags: audio linux programming
+#+hugo_categories: low-level
+
+
+ALSA es la interfaz de audio de Linux desde la versión 2.6
+Proporciona un modo para /comunicarse/ con el hardware de audio.
+
+** PCM interface
+A través de la interfaz PCM de ALSA podemos capturar o reproducir sonido de un dispositivo. PCM es un sistema para pasar una señal analógica a 
+una señal digital o viceversa. Fijando una frecuencia de muestreo se toma el valor de la señal (la amplitud) en cada pulso y se codifica con un número fijo de bits.
+De esta forma una señal analógica puede convertirse en un stream de bits y viceversa.
+Primero debemos fijar los parámetros del stream PCM
+ - /frame rate/ o frecuencia de muestreo. Por ejemplo 44100Hz
+ - formato de las muestras o /samples/. Ej.: src_c[:exports code]{SND_PCM_FORMAT_S16} PCM de 16bits por sample con el /endianess/ de la CPU
+ - formato del stream/modo de acceso (/access/). Ej.: src_c[:exports code]{SND_PCM_ACCESS_RW_INTERLEAVED} los canales están intercalados (/interleaved/). 
+Para un stream stereo de 2 canales, esto quiere decir que los frames se disponen en memoria como: /L R L R L R L R .../ siendo R un sample del canal izquierdo y R uno
+del derecho
+ - número de canales (/channels/). El sonido /stereo/ tiene 2 canales (izqdo y dcho), el /mono/ 1 canal, el /surround/ 22.2 tiene 24
+ - tamaño del /ring buffer/ y del período
+
+*** /Buffer size/ & /Period size/
+Para hacer un /stream/ continuo los dispositivos incluyen internamente un /ring buffer/, un espacio de memoria circular en el que los datos van siendo alimentados
+y consumidos con una política /FIFO/.
+La interfaz con la CPU se produce en bloques, por un lado esto introduce una latencia, pero por otro hace el sonido manejable puesto que sería excesivamente demandante
+que la CPU fuera interrumpida con la frecuencia de muestreo (44 mil veces/segundo típicamente) o realizar un cambio de contexto con esta tasa.
+Así tenemos el /buffer/ interno que almacena los datos aún por procesar y el período, que es un subconjunto de este buffer, y es la cantidad de datos que han de ser
+consumidos para que la CPU pueda ser interrumpida. Si el período y el buffer fueran del mismo tamaño, se agotarían todos los samples, luego la CPU se interrumpiría,
+el proceso produciría nuevos samples para continuar con el sonido, pero el hardware ya no tendría datos para seguir fabricando la señal que enviar a los altavoces...
+el resultado es un /buffer underrun/, o sea, el hardware de audio se quedó sin datos, y el sonido ha tenido que pararse.
+
+** Secuencia básica para generar una nota musical con ALSA
+Los pasos que debemos llevar son
+
+
+# https://edotor.net/
+
+#+BEGIN_SRC dot -Tsvg :file ../static/images/test-dot.svg :exports results
+digraph G {
+    bgcolor = "#353b43";
+    fontcolor="#afbac4";
+    fontname="DejaVu Sans";
+    edge[fontname="DejaVu Sans", fontcolor="#afbac4", color="#779dce"]
+    node[fontname="DejaVu Sans", fontcolor="#afbac4", color="#3e5373", style=filled]
+    newrank = true;
+    node [shape = box];
+    subgraph cluster_conf {
+        style=filled;
+        color="#825355";
+        node[style=filled, color="#3e5373"];
+        conf0 -> conf1;
+        label = "Configurar parámetros disp";
+    }
+    start -> conf0;
+    conf1 -> reg_callback;
+    subgraph cluster_callback {
+        style=filled;
+        color="#825355";
+        node[style=filled, color="#3e5373"];
+        cb_loop -> gen_wave [label = "sí"];
+        gen_wave -> send_buffer2 -> cb_loop;
+        cb_loop -> end_cb [label = "no"];
+        send_buffer2 -> end_cb [style = "invis"]
+        label="async callback";
+        cb_loop[shape = diamond, label = "espacio libre en buffer > 1 período?"]
+        gen_wave[label = "generar 1 período de samples"];
+        send_buffer2[label = "enviar samples"];
+        end_cb[label = "fin"];
+    }
+    {rank = same; reg_callback cb_loop }
+    reg_callback -> init_buffer -> send_buffer -> init_playback -> dummy_loop -> dummy_loop;
+    start [label = "Abrir dispositivo", shape = box];
+    conf0 [label = "Hardware params"];
+    conf1 [label = "Software params"];
+    reg_callback [label = "Registrar async callback"]
+    init_buffer[label = "Generar samples señal"];
+    send_buffer[label = "Enviar samples al dispositivo"];
+    init_playback[label = "Iniciar reproducción"];
+    dummy_loop[label = "Dormir proceso", shape = ellipse];
+}
+#+END_SRC
+
+0. alguna declaración de variables
+#+begin_src c
+snd_pcm_sframes_t buffer_size;
+snd_pcm_sframes_t period_size;
+pcm_t *handle;
+snd_pcm_hw_params_t *hwparams;
+snd_pcm_sw_params_t *swparams;
+
+signed short *samples;
+
+snd_async_handler_t *ahandler;
+#+end_src
+1. abrir dispositivo
+#+begin_src c
+snd_pcm_open(&handle, "plughw:0,0", SND_PCM_STREAM_PLAYBACK, 0)
+#+end_src
+2. configurar parámetros
+#+begin_src c
+snd_pcm_hw_params_set_access(handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED);
+snd_pcm_hw_params_set_format(handle, hwparams, SND_PCM_FORMAT_S16);
+snd_pcm_hw_params_set_channels(handle, hwparams, 2);
+snd_pcm_hw_params_set_rate_near(handle, hwparams, &rrate, 0);
+snd_pcm_hw_params_set_buffer_time_near(handle, hwparams, &buffer_time, &dir);
+snd_pcm_hw_params_set_period_time_near(handle, hwparams, &period_time, &dir);
+snd_pcm_hw_params(handle, hwparams);
+#+end_src
+3. registrar asynchronous callback
+#+begin_src c
+snd_async_add_pcm_handler(&ahandler, handle, transfer_callback, &data);
+#+end_src
+4. Generar samples señal
+5. Enviar samples al dispositivo
+#+begin_src c
+snd_pcm_writei(handle, samples, period_size);
+#+end_src
+6. Iniciar reproducción
+#+begin_src c
+snd_pcm_start(handle);
+#+end_src
+
+Async callback
+1. Comprobar espacio libre en buffer
+#+begin_src c
+while(snd_pcm_avail_update(handle) >= period_size)
+#+end_src
+2 y 3. Análogos
+
+https://www.alsa-project.org/wiki/FramesPeriods
+

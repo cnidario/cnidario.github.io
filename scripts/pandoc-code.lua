@@ -1,3 +1,4 @@
+-- require("mobdebug").start()
 local function openTag(tag, classes)
     if classes == nil or #classes == 0 then
         return '<' .. tag .. '>'
@@ -45,5 +46,19 @@ function CodeBlock(el)
         return pandoc.RawBlock(FORMAT, openTag('pre') .. openTag('code', el.classes) .. pygmentized .. closeTag('code') .. closeTag('pre'))
     else
         return el
+    end
+end
+
+local function starts_with(start, str)
+  return str:sub(1, #start) == start
+end
+
+
+function Code(elem)
+    local iframe_file = string.match(elem.text, "{{< iframe ([%a%d-/%.]+) >}}")
+    if iframe_file then
+        return pandoc.RawInline(FORMAT, '<iframe src="' .. iframe_file .. '"></iframe>')
+    else
+        return elem
     end
 end

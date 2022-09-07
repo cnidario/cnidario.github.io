@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test GNU as para ARM compilado con emscripten</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.7/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.7/mode-assembly_x86.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.7/theme-monokai.js"></script>
+
+    <script src="/js/as.js"></script>
+    <style>
+        body {
+          margin: 0;
+          padding: 0;
+        }
+        #main {
+            display: flex;
+        }
+        #main, #editor, #assemble-btn, #result {
+            position: relative;
+        }
+        #editor {
+            width: 320px;
+            height: 240px;
+            font-size: 18px;
+        }
+        #assemble-btn-pos {
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+        #assemble-btn {
+            z-index: 5;
+            height: 32px;
+            bottom: 34px;
+            left: 2px;
+        }
+        #result {
+            overflow: auto;
+            background-color: #474747;
+            width: 100%;
+            margin-left: 4px;
+            color: #d9d9d9;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        #err-messages {
+            position: absolute;
+            z-index: 0;
+            background-color: #474747;
+            width: 100%;
+            height: 100%;
+        }
+        #err-messages-list {
+            list-style-type: none;
+            margin: 14px;
+            padding: 0;
+        }
+        #output-msg {
+            margin: 14px;
+        }
+        #output {
+            position: absolute;
+            z-index: 1;
+            background-color: #474747;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <div id="input">
+            <div id="editor">
+.section .text
+_start:
+    mov r7, #0
+            </div>
+            <div id="assemble-btn-pos">
+                <button id="assemble-btn">Assemble!</button>
+            </div>
+        </div>
+        <div id="result">
+            <div id="output">
+                <div id="output-msg"><i>Aquí la salida</i></div>
+            </div>
+            <div id="err-messages">
+                <ul id="err-messages-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script>
+        var editor = ace.edit('editor');
+        editor.getSession().setUseWorker(false);
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/assembly_x86");
+
+        function clearElement(elm) {
+            while(elm.childNodes.length > 0) {
+                elm.removeChild(elm.childNodes[0]);
+            }
+        }
+        var errMessages = document.getElementById('err-messages');
+        var errMessagesList = document.getElementById('err-messages-list');
+        var output = document.getElementById('output');
+        var outputMsg = document.getElementById('output-msg');
+        function renderMessages(stderr_messages) {
+            for(var i = 0; i < stderr_messages.length; i++) {
+                var liElm = document.createElement('li');
+                var txtNode = document.createTextNode(stderr_messages[i]);
+                liElm.appendChild(txtNode);
+                errMessagesList.appendChild(liElm);
+            }
+        }
+        function init() {
+            clearElement(errMessagesList);
+            clearElement(outputMsg);
+        }
+        var assembleBtn = document.getElementById('assemble-btn');
+        assembleBtn.addEventListener("click", function (event) {
+            AS().then(function(Module) {
+                init();
+                Module.FS.writeFile('input.s', editor.getValue());
+                Module.callMain(['-o', 'output.o', 'input.s']);
+                try {
+                    var bytes = Module.FS.readFile('output.o');
+                    outputMsg.appendChild(document.createTextNode('Ensamblado OK: ' + bytes.length + ' bytes producidos'));
+                    output.style.zIndex = 1;
+                    errMessages.style.zIndex = 0;
+                } catch(error) {
+                    errMessagesList.appendChild(document.createTextNode('Ensamblado fallido'));
+                    renderMessages(Module.stderr_messages);
+                    output.style.zIndex = 0;
+                    errMessages.style.zIndex = 1;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
