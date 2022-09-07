@@ -40,7 +40,7 @@ dist/css/% : static/css/%
 	@mkdir -p $(@D)
 	minify $< -o $@
 
-tmp/titles.md : post/*.md templates/pandoc-html5.html
+tmp/titles.md : $(MDS) templates/pandoc-html5.html
 	@echo "Generating titles..."
 	@mkdir -p tmp
 	$(shell awk -v delim=0 -v draft=0 -F': ' \
@@ -73,8 +73,8 @@ dist/about.html: static/about.md
 	$(shell pandoc -s --metadata title=about -f markdown -t html5 --template templates/pandoc-html5.html $< | minify --type html -o $@)
 
 live:
-	caddy file-server -browse -listen 127.0.0.1:8000 --root dist/ &
-	firefox -new-tab http://127.0.0.1:8000
+	caddy file-server -browse -listen 127.0.0.1:8000 --root ./ &
+	firefox -new-tab http://127.0.0.1:8000/dist/home.html
 	@echo "Kill with 'pkill caddy'"
 
 clean:
@@ -84,3 +84,4 @@ clean:
 dist-clean:
 	@rm -rf tmp/*
 	@rm dist/post/test.html
+
