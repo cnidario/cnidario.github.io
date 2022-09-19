@@ -28,13 +28,167 @@ docker run --name postgres_db <span class=se>\</span>
 </pre></div></code></pre><p>Es un programa <strong>interactivo</strong>. Seleccionamos PostgreSQL
 y ponemos la password, user y nombre de base de datos con los que
 lanzamos el contenedor de Docker. También puede configurarse
-offline.<figure><img src=/blog/restful-directus-1.png alt="Prompt interactivo al crear un proyecto con Directus"><figcaption aria-hidden=true>Prompt interactivo al crear un proyecto
+offline.<figure><img src=../img/restful-directus-1.png alt="Prompt interactivo al crear un proyecto con Directus"><figcaption aria-hidden=true>Prompt interactivo al crear un proyecto
 con Directus</figcaption></figure><ol start=3 type=1><li>Ya está listo. Arrancamos la app.</ol><pre><code class=bash><div class=highlight><pre><span></span><span class=nb>cd</span> tienda-directus <span class=o>&amp;&amp;</span> npx directus start
-</pre></div></code></pre><ol start=4 type=1><li>Ahora sólo queda acceder a localhost:8055</ol><figure><img src=/blog/restful-directus-2.png alt="Pantalla de login de la app de administración"><figcaption aria-hidden=true>Pantalla de login de la app de
+</pre></div></code></pre><ol start=4 type=1><li>Ahora sólo queda acceder a localhost:8055</ol><figure><img src=../img/restful-directus-2.png alt="Pantalla de login de la app de administración"><figcaption aria-hidden=true>Pantalla de login de la app de
 administración</figcaption></figure><h2 id=creando-el-modelo>Creando el modelo</h2><p>Será una tienda no demasiado simple. Tenemos artículos con título,
 descripción, precio, imagen y valoraciones asociadas a comentarios de
-usuarios. Colecciones: - articulos titulo, descripcion, precio, imagen -
-usuarios nombre, password - valoraciones comentario, puntuacion - cada
-articulo tiene muchas valoraciones - cada usuario tiene muchas
-valoraciones - cada valoración tiene un único usuario y único articulo.
-Directus no tiene O2O<p>Roles & permisos</main><footer>made by me</footer>
+usuarios. Colecciones:<ul><li>articulos titulo, descripcion, precio, imagen<li>usuarios nombre, password<li>valoraciones comentario, puntuacion<li>cada articulo tiene muchas valoraciones<li>cada usuario tiene muchas valoraciones<li>cada valoración tiene un único usuario y único articulo. Directus no
+tiene O2O</ul><p>Despues de crear las entidades/tablas (la relación con SQL se nota
+bastante directa), tenemos algo así:<figure><img src=../img/restful-directus-3.png alt="Settings > Data Model"><figcaption aria-hidden=true>Settings > Data Model</figcaption></figure><p>Y tras añadir unos productos, usuarios y valoraciones, esto:<figure><img src=../img/restful-directus-4.png alt=Content><figcaption aria-hidden=true>Content</figcaption></figure><h2 id=roles-permisos>Roles & permisos</h2><p>Crea un nuevo rol con acceso a las entidades. Seguidamente crea un
+usuario con ese rol y genera un Bearer token. Este token será con el que
+accederemos a la API Rest.<figure><img src=../img/restful-directus-5.png alt="Settings > Roles & Permissions > App Role"><figcaption aria-hidden=true>Settings > Roles & Permissions
+> App Role</figcaption></figure><h2 id=hecho.>Hecho.</h2><p>Test simple con curl.<pre><code class=console><div class=highlight><pre><span></span><span class=go>curl -H &quot;Authorization: Bearer &lt;TU_TOKEN_AQUI&gt;&quot; http://localhost:8055/items/product</span>
+<span class=go>curl -H &quot;Authorization: Bearer &lt;TU_TOKEN_AQUI&gt;&quot; http://localhost:8055/items/rating</span>
+<span class=go>curl -H &quot;Authorization: Bearer &lt;TU_TOKEN_AQUI&gt;&quot; http://localhost:8055/items/user</span>
+</pre></div></code></pre><p>Bueno, no fueron 5 minutos. Pero menos de 30, quien podía
+esperarlo?<h2 id=bonus-la-app-completa-de-regalo>Bonus: La app completa de
+regalo</h2><p>Quizá ha planteado algo de dificultad la configuración del servidor
+(Directus + Caddy front con reverse proxy). Sobre todo por la unión de
+la necesidad de CORS + el modo de autorización de Directus (Bear Token).
+Y tras unas horas de debug tenemos una simple web store en JS puro.<figure><img src=../img/restful-directus-6.png alt="Nuestra esmerada web store"><figcaption aria-hidden=true>Nuestra esmerada web store</figcaption></figure><p>index.html<pre><code class=html><div class=highlight><pre><span></span><span class=cp>&lt;!DOCTYPE html&gt;</span>
+<span class=p>&lt;</span><span class=nt>html</span> <span class=na>lang</span><span class=o>=</span><span class=s>&quot;en&quot;</span><span class=p>&gt;</span>
+<span class=p>&lt;</span><span class=nt>head</span><span class=p>&gt;</span>
+    <span class=p>&lt;</span><span class=nt>meta</span> <span class=na>charset</span><span class=o>=</span><span class=s>&quot;UTF-8&quot;</span><span class=p>&gt;</span>
+    <span class=p>&lt;</span><span class=nt>meta</span> <span class=na>name</span><span class=o>=</span><span class=s>&quot;referrer&quot;</span> <span class=na>content</span><span class=o>=</span><span class=s>&quot;no-referrer&quot;</span> <span class=p>/&gt;</span>
+    <span class=p>&lt;</span><span class=nt>title</span><span class=p>&gt;</span>Super Low Tech Store<span class=p>&lt;/</span><span class=nt>title</span><span class=p>&gt;</span>
+<span class=p>&lt;</span><span class=nt>style</span><span class=p>&gt;.</span><span class=nc>im</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=k>width</span><span class=p>:</span><span class=w> </span><span class=mi>240</span><span class=kt>px</span><span class=p>;</span><span class=w> </span><span class=p>}</span><span class=w> </span><span class=p>.</span><span class=nc>app</span><span class=w> </span><span class=p>{</span><span class=k>display</span><span class=p>:</span><span class=w> </span><span class=kc>flex</span><span class=p>;</span><span class=w> </span><span class=p>}</span><span class=w> </span><span class=p>&lt;/</span><span class=nt>style</span><span class=p>&gt;</span>
+<span class=p>&lt;/</span><span class=nt>head</span><span class=p>&gt;</span>
+<span class=p>&lt;</span><span class=nt>body</span><span class=p>&gt;</span>
+    <span class=p>&lt;</span><span class=nt>h1</span><span class=p>&gt;</span>Super Low Tech Store!<span class=p>&lt;/</span><span class=nt>h1</span><span class=p>&gt;</span>
+    <span class=p>&lt;</span><span class=nt>h2</span><span class=p>&gt;</span>Products<span class=p>&lt;/</span><span class=nt>h2</span><span class=p>&gt;</span>
+    <span class=p>&lt;</span><span class=nt>div</span> <span class=na>class</span><span class=o>=</span><span class=s>&quot;app&quot;</span><span class=p>&gt;</span>
+        <span class=p>&lt;</span><span class=nt>ul</span> <span class=na>id</span><span class=o>=</span><span class=s>&quot;product-list&quot;</span><span class=p>&gt;&lt;/</span><span class=nt>ul</span><span class=p>&gt;</span>
+        <span class=p>&lt;</span><span class=nt>h2</span> <span class=na>id</span><span class=o>=</span><span class=s>&quot;product-title&quot;</span><span class=p>&gt;&lt;/</span><span class=nt>h2</span><span class=p>&gt;</span>
+        <span class=p>&lt;</span><span class=nt>ul</span> <span class=na>id</span><span class=o>=</span><span class=s>&quot;rating-list&quot;</span><span class=p>&gt;&lt;/</span><span class=nt>ul</span><span class=p>&gt;</span>
+    <span class=p>&lt;/</span><span class=nt>div</span><span class=p>&gt;</span>
+    <span class=p>&lt;</span><span class=nt>script</span><span class=p>&gt;</span>
+        <span class=kd>let</span> <span class=nx>fetch_options</span> <span class=o>=</span> <span class=p>{</span> 
+            <span class=nx>method</span><span class=o>:</span> <span class=s1>&#39;GET&#39;</span><span class=p>,</span>
+            <span class=nx>headers</span><span class=o>:</span> <span class=p>{</span>
+                <span class=s1>&#39;Accept&#39;</span><span class=o>:</span> <span class=s1>&#39;application/json&#39;</span><span class=p>,</span>
+                <span class=s1>&#39;Content-Type&#39;</span><span class=o>:</span> <span class=s1>&#39;application/json&#39;</span><span class=p>,</span>
+                <span class=s1>&#39;Authorization&#39;</span><span class=o>:</span> <span class=s1>&#39;Bearer kiuf5iazcFAX_dd16LKDud7MmpEbCqh1&#39;</span><span class=p>,</span>
+            <span class=p>},</span>
+            <span class=nx>mode</span><span class=o>:</span> <span class=s1>&#39;cors&#39;</span><span class=p>,</span>
+         <span class=p>};</span>
+        <span class=kd>function</span> <span class=nx>productClick</span><span class=p>(</span><span class=nx>elm</span><span class=p>)</span> <span class=p>{</span>
+            <span class=kd>let</span> <span class=nx>rating_list</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>getElementById</span><span class=p>(</span><span class=s1>&#39;rating-list&#39;</span><span class=p>);</span>
+            <span class=nx>rating_list</span><span class=p>.</span><span class=nx>replaceChildren</span><span class=p>();</span>
+            <span class=nx>fetch</span><span class=p>(</span><span class=sb>`https://localhost:8887/items/product/</span><span class=si>${</span><span class=nx>elm</span><span class=p>.</span><span class=nx>getAttribute</span><span class=p>(</span><span class=s1>&#39;data-pid&#39;</span><span class=p>,</span> <span class=nx>elm</span><span class=p>)</span><span class=si>}</span><span class=sb>`</span><span class=p>,</span> <span class=nx>fetch_options</span><span class=p>)</span>
+            <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>res</span> <span class=p>=&gt;</span> <span class=nx>res</span><span class=p>.</span><span class=nx>text</span><span class=p>())</span>
+            <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>data</span> <span class=p>=&gt;</span> <span class=nb>JSON</span><span class=p>.</span><span class=nx>parse</span><span class=p>(</span><span class=nx>data</span><span class=p>))</span>
+            <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>json</span> <span class=p>=&gt;</span> <span class=p>{</span>
+                <span class=kd>let</span> <span class=nx>ptitle</span> <span class=o>=</span> <span class=nx>json</span><span class=p>[</span><span class=s2>&quot;data&quot;</span><span class=p>][</span><span class=s2>&quot;title&quot;</span><span class=p>];</span>
+                <span class=kd>let</span> <span class=nx>ptitelm</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>getElementById</span><span class=p>(</span><span class=s1>&#39;product-title&#39;</span><span class=p>);</span>
+                <span class=nx>ptitelm</span><span class=p>.</span><span class=nx>replaceChildren</span><span class=p>(</span><span class=nb>document</span><span class=p>.</span><span class=nx>createTextNode</span><span class=p>(</span><span class=nx>ptitle</span><span class=p>));</span>
+                <span class=c1>// load ratings</span>
+                <span class=kd>let</span> <span class=nx>r_root</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>getElementById</span><span class=p>(</span><span class=s1>&#39;rating-list&#39;</span><span class=p>);</span>
+                <span class=kd>let</span> <span class=nx>r_list</span> <span class=o>=</span> <span class=nx>json</span><span class=p>[</span><span class=s2>&quot;data&quot;</span><span class=p>][</span><span class=s2>&quot;ratings&quot;</span><span class=p>];</span>
+                <span class=k>for</span><span class=p>(</span><span class=kd>let</span> <span class=nx>r</span> <span class=k>of</span> <span class=nx>r_list</span><span class=p>)</span> <span class=p>{</span>
+                    <span class=nx>fetch</span><span class=p>(</span><span class=sb>`https://localhost:8887/items/rating/</span><span class=si>${</span><span class=nx>r</span><span class=si>}</span><span class=sb>`</span><span class=p>,</span> <span class=nx>fetch_options</span><span class=p>)</span>
+                    <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>res</span> <span class=p>=&gt;</span> <span class=nx>res</span><span class=p>.</span><span class=nx>text</span><span class=p>())</span>
+                    <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>data</span> <span class=p>=&gt;</span> <span class=nb>JSON</span><span class=p>.</span><span class=nx>parse</span><span class=p>(</span><span class=nx>data</span><span class=p>))</span>
+                    <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>json</span> <span class=p>=&gt;</span> <span class=p>{</span>
+                        <span class=kd>let</span> <span class=nx>rat</span> <span class=o>=</span> <span class=nx>json</span><span class=p>[</span><span class=s2>&quot;data&quot;</span><span class=p>];</span>
+                        <span class=kd>let</span> <span class=nx>comment</span> <span class=o>=</span> <span class=nx>rat</span><span class=p>[</span><span class=s1>&#39;comment&#39;</span><span class=p>];</span>
+                        <span class=kd>let</span> <span class=nx>user_id</span> <span class=o>=</span> <span class=nx>rat</span><span class=p>[</span><span class=s1>&#39;user_owner&#39;</span><span class=p>];</span>
+                        <span class=kd>let</span> <span class=nx>value</span> <span class=o>=</span> <span class=nx>rat</span><span class=p>[</span><span class=s1>&#39;value&#39;</span><span class=p>];</span>
+                        <span class=nx>fetch</span><span class=p>(</span><span class=sb>`https://localhost:8887/items/user/</span><span class=si>${</span><span class=nx>user_id</span><span class=si>}</span><span class=sb>`</span><span class=p>,</span> <span class=nx>fetch_options</span><span class=p>)</span>
+                        <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>res</span> <span class=p>=&gt;</span> <span class=nx>res</span><span class=p>.</span><span class=nx>text</span><span class=p>())</span>
+                        <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>data</span> <span class=p>=&gt;</span> <span class=nb>JSON</span><span class=p>.</span><span class=nx>parse</span><span class=p>(</span><span class=nx>data</span><span class=p>))</span>
+                        <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>json</span> <span class=p>=&gt;</span> <span class=p>{</span>
+                            <span class=kd>let</span> <span class=nx>relm</span> <span class=o>=</span> <span class=nx>createRatingElement</span><span class=p>(</span><span class=nx>comment</span><span class=p>,</span> <span class=nx>json</span><span class=p>[</span><span class=s1>&#39;data&#39;</span><span class=p>][</span><span class=s1>&#39;name&#39;</span><span class=p>],</span> <span class=nx>value</span><span class=p>);</span>
+                            <span class=nx>r_root</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nx>relm</span><span class=p>);</span>
+                        <span class=p>});</span>
+                    <span class=p>}).</span><span class=nx>then</span><span class=p>(()</span> <span class=p>=&gt;</span> <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=s2>&quot;Ratings loaded Ok.&quot;</span><span class=p>));</span>
+                <span class=p>}</span>
+            <span class=p>}).</span><span class=nx>then</span><span class=p>(()</span> <span class=p>=&gt;</span> <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=s2>&quot;Products loaded OK.&quot;</span><span class=p>));</span>
+        <span class=p>}</span>
+        <span class=kd>function</span> <span class=nx>createProductElement</span><span class=p>(</span><span class=nx>title</span><span class=p>,</span> <span class=nx>description</span><span class=p>,</span> <span class=nx>img</span><span class=p>,</span> <span class=nx>pid</span><span class=p>)</span> <span class=p>{</span>
+            <span class=kd>let</span> <span class=nx>product_top</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>createElement</span><span class=p>(</span><span class=s2>&quot;li&quot;</span><span class=p>);</span>
+            <span class=kd>let</span> <span class=nx>ptitle</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>createElement</span><span class=p>(</span><span class=s2>&quot;a&quot;</span><span class=p>);</span>
+            <span class=nx>ptitle</span><span class=p>.</span><span class=nx>href</span> <span class=o>=</span> <span class=s2>&quot;#&quot;</span><span class=p>;</span>
+            <span class=nx>ptitle</span><span class=p>.</span><span class=nx>setAttribute</span><span class=p>(</span><span class=s1>&#39;onclick&#39;</span><span class=p>,</span> <span class=s2>&quot;productClick(this)&quot;</span><span class=p>);</span>
+            <span class=nx>ptitle</span><span class=p>.</span><span class=nx>setAttribute</span><span class=p>(</span><span class=s1>&#39;data-pid&#39;</span><span class=p>,</span> <span class=nx>pid</span><span class=p>);</span>
+            <span class=nx>ptitle</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nb>document</span><span class=p>.</span><span class=nx>createTextNode</span><span class=p>(</span><span class=nx>title</span><span class=p>));</span>
+            <span class=kd>let</span> <span class=nx>pdesc</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>createElement</span><span class=p>(</span><span class=s2>&quot;p&quot;</span><span class=p>);</span>
+            <span class=nx>pdesc</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nb>document</span><span class=p>.</span><span class=nx>createTextNode</span><span class=p>(</span><span class=nx>description</span><span class=p>));</span>
+            <span class=kd>let</span> <span class=nx>pimg</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>createElement</span><span class=p>(</span><span class=s2>&quot;img&quot;</span><span class=p>);</span>
+            <span class=nx>pimg</span><span class=p>.</span><span class=nx>src</span> <span class=o>=</span> <span class=s1>&#39;https://localhost:8887/assets/&#39;</span> <span class=o>+</span> <span class=nx>img</span><span class=p>;</span>
+            <span class=nx>pimg</span><span class=p>.</span><span class=nx>classList</span><span class=p>.</span><span class=nx>add</span><span class=p>(</span><span class=s1>&#39;im&#39;</span><span class=p>);</span>
+            <span class=nx>product_top</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nx>ptitle</span><span class=p>);</span>
+            <span class=nx>product_top</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nx>pdesc</span><span class=p>);</span>
+            <span class=nx>product_top</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nx>pimg</span><span class=p>);</span>
+            <span class=k>return</span> <span class=nx>product_top</span><span class=p>;</span>
+        <span class=p>}</span>
+        <span class=kd>function</span> <span class=nx>createRatingElement</span><span class=p>(</span><span class=nx>title</span><span class=p>,</span> <span class=nx>user_name</span><span class=p>,</span> <span class=nx>value</span><span class=p>)</span> <span class=p>{</span>
+            <span class=kd>let</span> <span class=nx>rating_top</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>createElement</span><span class=p>(</span><span class=s2>&quot;li&quot;</span><span class=p>);</span>
+            <span class=nx>rating_top</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nb>document</span><span class=p>.</span><span class=nx>createTextNode</span><span class=p>(</span><span class=sb>`</span><span class=si>${</span><span class=nx>user_name</span><span class=si>}</span><span class=sb> said: </span><span class=si>${</span><span class=nx>title</span><span class=si>}</span><span class=sb>. Rating: </span><span class=si>${</span><span class=nx>value</span><span class=si>}</span><span class=sb>/5`</span><span class=p>));</span>
+            <span class=k>return</span> <span class=nx>rating_top</span><span class=p>;</span>
+        <span class=p>}</span>
+
+        <span class=nx>fetch</span><span class=p>(</span><span class=s1>&#39;https://localhost:8887/items/product&#39;</span><span class=p>,</span> <span class=nx>fetch_options</span><span class=p>)</span>
+        <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>res</span> <span class=p>=&gt;</span> <span class=nx>res</span><span class=p>.</span><span class=nx>text</span><span class=p>())</span>
+        <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>data</span> <span class=p>=&gt;</span> <span class=nb>JSON</span><span class=p>.</span><span class=nx>parse</span><span class=p>(</span><span class=nx>data</span><span class=p>))</span>
+        <span class=p>.</span><span class=nx>then</span><span class=p>(</span><span class=nx>json</span> <span class=p>=&gt;</span> <span class=p>{</span>
+            <span class=kd>let</span> <span class=nx>p_root</span> <span class=o>=</span> <span class=nb>document</span><span class=p>.</span><span class=nx>getElementById</span><span class=p>(</span><span class=s1>&#39;product-list&#39;</span><span class=p>);</span>
+            <span class=kd>let</span> <span class=nx>p_list</span> <span class=o>=</span> <span class=nx>json</span><span class=p>[</span><span class=s2>&quot;data&quot;</span><span class=p>];</span>
+            <span class=k>for</span><span class=p>(</span><span class=kd>let</span> <span class=nx>p</span> <span class=k>of</span> <span class=nx>p_list</span><span class=p>)</span> <span class=p>{</span>
+                <span class=kd>let</span> <span class=nx>pelm</span> <span class=o>=</span> <span class=nx>createProductElement</span><span class=p>(</span><span class=nx>p</span><span class=p>[</span><span class=s1>&#39;title&#39;</span><span class=p>],</span> <span class=nx>p</span><span class=p>[</span><span class=s1>&#39;description&#39;</span><span class=p>],</span> <span class=nx>p</span><span class=p>[</span><span class=s1>&#39;image&#39;</span><span class=p>],</span> <span class=nx>p</span><span class=p>[</span><span class=s1>&#39;id&#39;</span><span class=p>]);</span>
+                <span class=nx>p_root</span><span class=p>.</span><span class=nx>appendChild</span><span class=p>(</span><span class=nx>pelm</span><span class=p>);</span>
+            <span class=p>}</span>
+        <span class=p>}).</span><span class=nx>then</span><span class=p>(()</span> <span class=p>=&gt;</span> <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=s2>&quot;Products loaded OK.&quot;</span><span class=p>));</span>
+    <span class=p>&lt;/</span><span class=nt>script</span><span class=p>&gt;</span>
+<span class=p>&lt;/</span><span class=nt>body</span><span class=p>&gt;</span>
+<span class=p>&lt;/</span><span class=nt>html</span><span class=p>&gt;</span>
+</pre></div></code></pre><p>Caddyfile (observad la pequeña trampa para bypasear la autorización
+al server de directus, quizá todo hubiera sido más simple sin meternos a
+necesitar CORS haciendo el reverse proxy transparente, todo al
+https://localhost:8888 y no parte al 8887)<pre><code class=ini><div class=highlight><pre><span></span><span class=na>{</span><span class=w></span>
+<span class=w>        </span><span class=na>http_port 8889</span><span class=w></span>
+<span class=w>        </span><span class=na>https_port 8888</span><span class=w></span>
+<span class=na>}</span><span class=w></span>
+
+<span class=na>localhost:8888 {</span><span class=w></span>
+<span class=w>        </span><span class=na>root .</span><span class=w></span>
+<span class=w>        </span><span class=na>file_server</span><span class=w></span>
+<span class=na>}</span><span class=w></span>
+<span class=na>localhost:8887 {</span><span class=w></span>
+<span class=w>        </span><span class=na>@options {</span><span class=w></span>
+<span class=w>            </span><span class=na>method OPTIONS</span><span class=w></span>
+<span class=w>        </span><span class=na>}</span><span class=w></span>
+<span class=w>        </span><span class=na>header {</span><span class=w></span>
+<span class=w>            </span><span class=na>Access-Control-Allow-Origin &quot;https://localhost:8888&quot;</span><span class=w></span>
+<span class=w>            </span><span class=na>Access-Control-Allow-Methods &quot;GET, POST, PUT, PATCH, DELETE&quot;</span><span class=w></span>
+<span class=w>            </span><span class=na>Access-Control-Allow-Headers &quot;Content-Type, Authorization, Accept-Ranges&quot;</span><span class=w></span>
+<span class=w>            </span><span class=na>Access-Control-Max-Age &quot;86400&quot;</span><span class=w></span>
+<span class=w>            </span><span class=na>defer</span><span class=w></span>
+<span class=w>        </span><span class=na>}</span><span class=w></span>
+<span class=w>        </span><span class=na>reverse_proxy /assets/* http://localhost:8055 {</span><span class=w></span>
+<span class=w>            </span><span class=na>header_up Authorization &quot;Bearer kiuf5iazcFAX_dd16LKDud7MmpEbCqh1&quot;</span><span class=w></span>
+<span class=w>        </span><span class=na>}</span><span class=w></span>
+<span class=w>        </span><span class=na>reverse_proxy http://localhost:8055 {</span><span class=w></span>
+<span class=w>            </span><span class=na>header_down -Access-Control-Allow-Origin</span><span class=w></span>
+
+<span class=w>        </span><span class=na>}</span><span class=w></span>
+<span class=w>        </span><span class=na>respond @options 204</span><span class=w></span>
+<span class=na>}</span><span class=w></span>
+</pre></div></code></pre><p>Oh, bueno, y para arrancarlo todo hago algo como<pre><code class=bash><div class=highlight><pre><span></span><span class=ch>#!/bin/bash</span>
+
+<span class=nb>set</span> -eu pipefail
+
+<span class=nb>echo</span> <span class=s2>&quot;Starting postgres container&quot;</span>
+docker start postgres_db
+<span class=nb>echo</span> <span class=s2>&quot;Starting caddy, use caddy reload or caddy stop to control&quot;</span>
+caddy start
+<span class=nb>echo</span> <span class=s2>&quot;Starting directus&quot;</span>
+<span class=o>(</span><span class=nb>cd</span> ../tienda-directus <span class=o>&amp;&amp;</span> npx directus start<span class=o>)</span>
+</pre></div></code></pre><h2 id=conclusiones>Conclusiones</h2><p>Nos hemos ventilado un backend con bastante fácil. Lo interesante es
+que Directus es una app no-code que otorga directamente una interfaz web
+bonita para backoffice (introduzco los datos en mi base de datos con una
+interfaz web). Además, a diferencia de Strapi (según afirman), no impone
+un formato sobre la base de datos, esto parece bastante cierto (bastante
+porque las relaciones sí que vienen precondiguradas a cierta forma). Así
+que lo veo genial para prototipar y para backends con stores o modelos
+simples (blogs, coleccionesde recursos, inventarios…).</main><footer>made by me</footer>
