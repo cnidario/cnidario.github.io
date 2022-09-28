@@ -1,0 +1,105 @@
+---
+title: Installing Windows 10 from my Linux laptop
+author: cnidario
+date: 2022-09-13
+---
+
+**Goals**: Installing Windows 10 in an old laptop through iPXE (booting from network)
+I have an old ASUS Portege Z930-108 laptop and I want to install Windows 10, but I have some spare time and I didn't want to write the Windows ISO into an USB pendrive, so why not trying to use an iPXE Boot environment.
+
+1. Configure a DHCP & TFTP servers
+Fortunately, `dnsmasq` has a DHCP & TFTP server integrated. So first install the package, in Arch: `pacman -S dnsmasq`.
+Now we can configure editing the file `/etc/dnsmasq.conf`. We need to uncomment/edit the following lines
+```{.ini}
+log-debug
+port=0 #disables DNS server
+interface=enp0sxxxx # <<<< YOUR LOCAL NETWORK INTERFACE
+dhcp-no-override
+listen-address=192.168.0.1 # address of your interface
+bind-interfaces
+log-dhcp
+dhcp-range=192.168.0.2,192.168.0.100,12h # range of DHCP leases, this enables the DHCP server
+dhcp-option=6,0.0.0.0 # dhcp-server option (see all with dnsmasq --help dhcp)
+dhcp-boot=boot.ipxe # boot filename for PXE
+enable-tftp
+tftp-root=/home/cnidario/code/ipxe
+```
+Start dnsmasq and watch for errors + some debugguing useful commands
+```{.console}
+systemctl start dnsmasq
+journalctl -u dnsmasq
+tail -f /var/lib/misc/dnsmasq.leases # watch for DHCP leases
+tcpdump -i enp0sxxxx -vv
+nmap --script broadcast-dhcp-discover -e enp0s31f6 # test DHCP on the interface
+
+## Alternatively you could try something like 
+## dhclient -d -4 -1 -v enp0s31f6, or with -s 192.168.0.1 or -s 192.168.0.255 but I think the lease didn't work for me
+## No DHCPOFFERS
+## ALSO NOTE that the network cable must be connected on a powered computer, otherwise
+## tcpdump -D will mark the interface as [Up, Disconnected] and no packets will be captured!
+
+## DEBUG ARP resolutions
+## arping -I enp0s31f6 192.168.0.22
+```
+
+2. Create an ipxe boot file
+```{.console}
+cat > /home/cnidario/code/ipxe/boot.ipxe << EOF
+#!ipxe
+
+cpuid --ext 29 && set arch amd64 || set arch x86
+kernel wimboot
+initrd ${arch}/media/sources/boot.wim  boot.wim
+boot
+EOF
+```
+
+Then you can also test the TFTP server.
+```{.console}
+tftp 192.168.0.1
+verbose
+trace
+status
+get /boot.ipxe
+quit
+ls -lh boot.ipxe
+```
+
+7z l ~/Downloads/Win10_21H2_Spanish_x64.iso | grep .wim
+7z x ~/Downloads/Win10_21H2_Spanish_x64.iso -o/home/cnidario/code/ipxe/amd64/media sources/boot.wim
+7z l ~/Downloads/Win10_21H2_Spanish_x64.iso  | grep "\.efi"
+
+After this I boot the laptop and press `F12` several times while booting up to enter in the boot menu. From there I choose Boot from the network interface and the DHCP server enters in action.
+
+
+
+pxe-e79: nbp is too big to fit in free base memory >> Boot Mode: from CSM to UEFI mode
+https://gist.github.com/NiKiZe/5c181471b96ac37a069af0a76688944d
+
+pacman -S syslinux
+contiene /usr/lib/syslinux/bios/pxelinux.0
+pacman -S wimlib
+Contiene mkwinpeiso
+https://wiki.syslinux.org/wiki/index.php?title=PXELINUX
+https://wiki.archlinux.org/title/Preboot_Execution_Environment
+https://wiki.archlinux.org/title/syslinux#PXELINUX
+https://wiki.archlinux.org/title/Windows_PE
+====>>>> https://musteresel.github.io/posts/2018/04/install-windows-over-pxe-with-dnsmasq-pxelinux-winpe.html
+https://gist.github.com/rikka0w0/987d3e03c6f133802318669e85836870
+https://ipxe.org/howto/winpe
+
+AL parecer ipxe es para flashear rom bios y pxelinux para boot pxe
+
+Tedioso, pixiecore automatiza pero para linux
+
+ABANDONED
+
+syslinux -i /dev/sdb1
+## dependecia!!! mcopy not found, mtools
+
+Problemas problemas problemas
+
+https://jsamr.github.io/bootiso
+yay -S bootiso
+bootiso ....Win10.iso y ya
+

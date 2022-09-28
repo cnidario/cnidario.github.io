@@ -53,7 +53,7 @@ Colecciones:
  - valoraciones comentario, puntuacion
  - cada articulo tiene muchas valoraciones
  - cada usuario tiene muchas valoraciones
- - cada valoración tiene un único usuario y único articulo. Directus no tiene O2O
+ - cada valoración tiene un único usuario y único articulo. Directus no tiene relación one-to-one (O2O), así que hay que emularla con doble one-to-many.
 
 Despues de crear las entidades/tablas (la relación con SQL se nota bastante directa), tenemos algo así:
 
@@ -228,4 +228,74 @@ echo "Starting directus"
 (cd ../tienda-directus && npx directus start)
 ```
 ## Conclusiones
-Nos hemos ventilado un backend con bastante fácil. Lo interesante es que Directus es una app no-code que otorga directamente una interfaz web bonita para backoffice (introduzco los datos en mi base de datos con una interfaz web). Además, a diferencia de Strapi (según afirman), no impone un formato sobre la base de datos, esto parece bastante cierto (bastante porque las relaciones sí que vienen precondiguradas a cierta forma). Así que lo veo genial para prototipar y para backends con stores o modelos simples (blogs, coleccionesde recursos, inventarios...).
+Nos hemos ventilado un backend con Directus bastante fácil. Lo interesante es que Directus es una app no-code que otorga directamente una interfaz web bonita para backoffice (introduzco los datos en mi base de datos con una interfaz web). Además, a diferencia de Strapi (según afirman), no impone un formato sobre la base de datos, esto parece bastante cierto (bastante porque las relaciones sí que vienen precondiguradas a cierta forma). Así que lo veo genial para prototipar y para backends con stores o modelos simples (blogs, coleccionesde recursos, inventarios...).
+
+## Extra
+Fisguemos un poco la base de datos con el cliente de postgres `psql` para ver qué estructura crea Directus.
+```{.console}
+cni@mil:$~(0)$ psql -h localhost -p 5432 -U postgres tienda
+Password for user postgres:
+psql (14.5)
+Type "help" for help.
+
+tienda=# 
+```
+Listemos las tablas
+```{.console}
+tienda=# \d
+                      List of relations
+ Schema |             Name              |   Type   |  Owner
+--------+-------------------------------+----------+----------
+ public | directus_activity             | table    | postgres
+ public | directus_activity_id_seq      | sequence | postgres
+ public | directus_collections          | table    | postgres
+ public | directus_dashboards           | table    | postgres
+ public | directus_fields               | table    | postgres
+ public | directus_fields_id_seq        | sequence | postgres
+ public | directus_files                | table    | postgres
+ public | directus_flows                | table    | postgres
+ public | directus_folders              | table    | postgres
+ public | directus_migrations           | table    | postgres
+ public | directus_notifications        | table    | postgres
+ public | directus_notifications_id_seq | sequence | postgres
+ public | directus_operations           | table    | postgres
+ ...
+```
+Bueno, obviamente no iba a ser tan simple, estas son tablas del propio Directus. Las últimas son las que nos interesan.
+```{.console}
+...
+ public | product                       | table    | postgres
+ public | product_id_seq                | sequence | postgres
+ public | rating                        | table    | postgres
+ public | rating_id_seq                 | sequence | postgres
+ public | user                          | table    | postgres
+ public | user_id_seq                   | sequence | postgres
+(36 rows)
+```
+Tabla product.
+```{.console}
+tienda=# \d product
+                                        Table "public.product"
+    Column    |           Type           | Collation | Nullable |               Default
+--------------+--------------------------+-----------+----------+-------------------------------------
+ id           | integer                  |           | not null | nextval('product_id_seq'::regclass)
+ status       | character varying(255)   |           | not null | 'draft'::character varying
+ sort         | integer                  |           |          |
+ user_created | uuid                     |           |          |
+ date_created | timestamp with time zone |           |          |
+ user_updated | uuid                     |           |          |
+ date_updated | timestamp with time zone |           |          |
+ title        | character varying(255)   |           |          |
+ description  | text                     |           |          |
+ price        | real                     |           |          | '0'::real
+ image        | uuid                     |           |          |
+Indexes:
+    "product_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "product_image_foreign" FOREIGN KEY (image) REFERENCES directus_files(id) ON DELETE SET NULL
+    "product_user_created_foreign" FOREIGN KEY (user_created) REFERENCES directus_users(id)
+    "product_user_updated_foreign" FOREIGN KEY (user_updated) REFERENCES directus_users(id)
+Referenced by:
+    TABLE "rating" CONSTRAINT "rating_product_reviewed_foreign" FOREIGN KEY (product_reviewed) REFERENCES product(id) ON DELETE SET NULL
+```
+A vistazo gordo sí que parece que cumple lo que dice, es una estructura bastante limpia, con lo que con Directus sí que podemos librarnos un poco del [vendor lock-in](https://en.wikipedia.org/wiki/Vendor_lock-in), problema de deuda técnica a tener muy presente siempre que hablamos de soluciones no-code/low-code.

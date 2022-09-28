@@ -34,7 +34,8 @@ con Directus</figcaption></figure><ol start=3 type=1><li>Ya está listo. Arranca
 administración</figcaption></figure><h2 id=creando-el-modelo>Creando el modelo</h2><p>Será una tienda no demasiado simple. Tenemos artículos con título,
 descripción, precio, imagen y valoraciones asociadas a comentarios de
 usuarios. Colecciones:<ul><li>articulos titulo, descripcion, precio, imagen<li>usuarios nombre, password<li>valoraciones comentario, puntuacion<li>cada articulo tiene muchas valoraciones<li>cada usuario tiene muchas valoraciones<li>cada valoración tiene un único usuario y único articulo. Directus no
-tiene O2O</ul><p>Despues de crear las entidades/tablas (la relación con SQL se nota
+tiene relación one-to-one (O2O), así que hay que emularla con doble
+one-to-many.</ul><p>Despues de crear las entidades/tablas (la relación con SQL se nota
 bastante directa), tenemos algo así:<figure><img src=../img/restful-directus-3.png alt="Settings > Data Model"><figcaption aria-hidden=true>Settings > Data Model</figcaption></figure><p>Y tras añadir unos productos, usuarios y valoraciones, esto:<figure><img src=../img/restful-directus-4.png alt=Content><figcaption aria-hidden=true>Content</figcaption></figure><h2 id=roles-permisos>Roles & permisos</h2><p>Crea un nuevo rol con acceso a las entidades. Seguidamente crea un
 usuario con ese rol y genera un Bearer token. Este token será con el que
 accederemos a la API Rest.<figure><img src=../img/restful-directus-5.png alt="Settings > Roles & Permissions > App Role"><figcaption aria-hidden=true>Settings > Roles & Permissions
@@ -184,11 +185,73 @@ docker start postgres_db
 caddy start
 <span class=nb>echo</span> <span class=s2>&quot;Starting directus&quot;</span>
 <span class=o>(</span><span class=nb>cd</span> ../tienda-directus <span class=o>&amp;&amp;</span> npx directus start<span class=o>)</span>
-</pre></div></code></pre><h2 id=conclusiones>Conclusiones</h2><p>Nos hemos ventilado un backend con bastante fácil. Lo interesante es
-que Directus es una app no-code que otorga directamente una interfaz web
-bonita para backoffice (introduzco los datos en mi base de datos con una
-interfaz web). Además, a diferencia de Strapi (según afirman), no impone
-un formato sobre la base de datos, esto parece bastante cierto (bastante
-porque las relaciones sí que vienen precondiguradas a cierta forma). Así
-que lo veo genial para prototipar y para backends con stores o modelos
-simples (blogs, coleccionesde recursos, inventarios…).</main><footer>made by me</footer>
+</pre></div></code></pre><h2 id=conclusiones>Conclusiones</h2><p>Nos hemos ventilado un backend con Directus bastante fácil. Lo
+interesante es que Directus es una app no-code que otorga directamente
+una interfaz web bonita para backoffice (introduzco los datos en mi base
+de datos con una interfaz web). Además, a diferencia de Strapi (según
+afirman), no impone un formato sobre la base de datos, esto parece
+bastante cierto (bastante porque las relaciones sí que vienen
+precondiguradas a cierta forma). Así que lo veo genial para prototipar y
+para backends con stores o modelos simples (blogs, coleccionesde
+recursos, inventarios…).<h2 id=extra>Extra</h2><p>Fisguemos un poco la base de datos con el cliente de postgres
+<code>psql</code> para ver qué estructura crea Directus.<pre><code class=console><div class=highlight><pre><span></span><span class=gp>cni@mil:$~(0)$ </span>psql -h localhost -p <span class=m>5432</span> -U postgres tienda
+<span class=go>Password for user postgres:</span>
+<span class=go>psql (14.5)</span>
+<span class=go>Type &quot;help&quot; for help.</span>
+
+<span class=go>tienda=# </span>
+</pre></div></code></pre><p>Listemos las tablas<pre><code class=console><div class=highlight><pre><span></span><span class=go>tienda=# \d</span>
+<span class=go>                      List of relations</span>
+<span class=go> Schema |             Name              |   Type   |  Owner</span>
+<span class=go>--------+-------------------------------+----------+----------</span>
+<span class=go> public | directus_activity             | table    | postgres</span>
+<span class=go> public | directus_activity_id_seq      | sequence | postgres</span>
+<span class=go> public | directus_collections          | table    | postgres</span>
+<span class=go> public | directus_dashboards           | table    | postgres</span>
+<span class=go> public | directus_fields               | table    | postgres</span>
+<span class=go> public | directus_fields_id_seq        | sequence | postgres</span>
+<span class=go> public | directus_files                | table    | postgres</span>
+<span class=go> public | directus_flows                | table    | postgres</span>
+<span class=go> public | directus_folders              | table    | postgres</span>
+<span class=go> public | directus_migrations           | table    | postgres</span>
+<span class=go> public | directus_notifications        | table    | postgres</span>
+<span class=go> public | directus_notifications_id_seq | sequence | postgres</span>
+<span class=go> public | directus_operations           | table    | postgres</span>
+<span class=go> ...</span>
+</pre></div></code></pre><p>Bueno, obviamente no iba a ser tan simple, estas son tablas del
+propio Directus. Las últimas son las que nos interesan.<pre><code class=console><div class=highlight><pre><span></span><span class=go>...</span>
+<span class=go> public | product                       | table    | postgres</span>
+<span class=go> public | product_id_seq                | sequence | postgres</span>
+<span class=go> public | rating                        | table    | postgres</span>
+<span class=go> public | rating_id_seq                 | sequence | postgres</span>
+<span class=go> public | user                          | table    | postgres</span>
+<span class=go> public | user_id_seq                   | sequence | postgres</span>
+<span class="gp gp-VirtualEnv">(36 rows)</span>
+</pre></div></code></pre><p>Tabla product.<pre><code class=console><div class=highlight><pre><span></span><span class=go>tienda=# \d product</span>
+<span class=go>                                        Table &quot;public.product&quot;</span>
+<span class=go>    Column    |           Type           | Collation | Nullable |               Default</span>
+<span class=go>--------------+--------------------------+-----------+----------+-------------------------------------</span>
+<span class=go> id           | integer                  |           | not null | nextval(&#39;product_id_seq&#39;::regclass)</span>
+<span class=go> status       | character varying(255)   |           | not null | &#39;draft&#39;::character varying</span>
+<span class=go> sort         | integer                  |           |          |</span>
+<span class=go> user_created | uuid                     |           |          |</span>
+<span class=go> date_created | timestamp with time zone |           |          |</span>
+<span class=go> user_updated | uuid                     |           |          |</span>
+<span class=go> date_updated | timestamp with time zone |           |          |</span>
+<span class=go> title        | character varying(255)   |           |          |</span>
+<span class=go> description  | text                     |           |          |</span>
+<span class=go> price        | real                     |           |          | &#39;0&#39;::real</span>
+<span class=go> image        | uuid                     |           |          |</span>
+<span class=go>Indexes:</span>
+<span class=go>    &quot;product_pkey&quot; PRIMARY KEY, btree (id)</span>
+<span class=go>Foreign-key constraints:</span>
+<span class=go>    &quot;product_image_foreign&quot; FOREIGN KEY (image) REFERENCES directus_files(id) ON DELETE SET NULL</span>
+<span class=go>    &quot;product_user_created_foreign&quot; FOREIGN KEY (user_created) REFERENCES directus_users(id)</span>
+<span class=go>    &quot;product_user_updated_foreign&quot; FOREIGN KEY (user_updated) REFERENCES directus_users(id)</span>
+<span class=go>Referenced by:</span>
+<span class=go>    TABLE &quot;rating&quot; CONSTRAINT &quot;rating_product_reviewed_foreign&quot; FOREIGN KEY (product_reviewed) REFERENCES product(id) ON DELETE SET NULL</span>
+</pre></div></code></pre><p>A vistazo gordo sí que parece que cumple lo que dice, es una
+estructura bastante limpia, con lo que con Directus sí que podemos
+librarnos un poco del <a href=https://en.wikipedia.org/wiki/Vendor_lock-in>vendor lock-in</a>,
+problema de deuda técnica a tener muy presente siempre que hablamos de
+soluciones no-code/low-code.</main><footer>made by me</footer>
